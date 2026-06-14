@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Trash2, DatabaseZap, RefreshCw, MemoryStick, Download,
-  AlertTriangle, CheckCircle2, Loader2, ChevronRight,
+  AlertTriangle, CheckCircle2, Loader2, ChevronRight, ArchiveRestore, HardDrive,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
-import type { DailySummary, Session } from '@/types'
+import type { Backup, DailySummary, Session } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -155,11 +155,56 @@ async function exportSessionsCSV() {
   URL.revokeObjectURL(url)
 }
 
+// ─── Backup list item ─────────────────────────────────────────────────────────
+
+function fmtBackupDate(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    + ' at ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+interface BackupRowProps {
+  backup: Backup
+  onRestore: () => void
+  onDelete: () => void
+  isRestoring: boolean
+  isDeleting: boolean
+}
+
+function BackupItem({ backup, onRestore, onDelete, isRestoring, isDeleting }: BackupRowProps) {
+  return (
+    <div className="flex items-center gap-3 px-5 py-3 bg-slate-50 rounded-xl">
+      <HardDrive className="w-4 h-4 text-slate-400 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-700 truncate">{fmtBackupDate(backup.created_at)}</p>
+        <p className="text-xs text-slate-400">{fmtBytes(backup.size_bytes)}</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={onRestore}
+          disabled={isRestoring || isDeleting}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-brand-600 border border-brand-200 hover:bg-brand-50 transition-colors disabled:opacity-40"
+        >
+          {isRestoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArchiveRestore className="w-3 h-3" />}
+          Restore
+        </button>
+        <button
+          onClick={onDelete}
+          disabled={isRestoring || isDeleting}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors disabled:opacity-40"
+        >
+          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function Utilities() {
   const qc = useQueryClient()
-  const [confirm, setConfirm] = useState<null | 'delete'>(null)
+  const [confirm, setConfirm] = useState<null | 'delete' | { type: 'restore'; backup: Backup } | { type: 'deleteBackup'; backup: Backup }>(null)
   const [toast, setToast] = useState<{ message: string; ok: boolean } | null>(null)
 
   function showToast(message: string, ok: boolean) {
@@ -215,6 +260,55 @@ export function Utilities() {
       setExporting(false)
     }
   }
+
+  // ── Backup & Restore ──────────────────────────────────────────────────────
+
+  const { data: backupsData, refetch: refetchBackups } = useQuery({
+    queryKey: ['backups'],
+    queryFn: api.backups.list,
+  })
+  const backups = backupsData?.backups ?? []
+
+  const [activeBackupOp, setActiveBackupOp] = useState<{ id: string; op: 'restore' | 'delete' } | null>(null)
+
+  const createBackupMutation = useMutation({
+    mutationFn: api.backups.create,
+    onSuccess: () => {
+      refetchBackups()
+      showToast('Backup created.', true)
+    },
+    onError: () => showToast('Backup failed.', false),
+  })
+
+  const restoreBackupMutation = useMutation({
+    mutationFn: (id: string) => api.backups.restore(id),
+    onSuccess: () => {
+      qc.invalidateQueries()
+      setConfirm(null)
+      setActiveBackupOp(null)
+      showToast('Restore complete. All data has been replaced.', true)
+    },
+    onError: () => {
+      setConfirm(null)
+      setActiveBackupOp(null)
+      showToast('Restore failed.', false)
+    },
+  })
+
+  const deleteBackupMutation = useMutation({
+    mutationFn: (id: string) => api.backups.delete(id),
+    onSuccess: () => {
+      refetchBackups()
+      setConfirm(null)
+      setActiveBackupOp(null)
+      showToast('Backup deleted.', true)
+    },
+    onError: () => {
+      setConfirm(null)
+      setActiveBackupOp(null)
+      showToast('Delete failed.', false)
+    },
+  })
 
   return (
     <div>
@@ -300,6 +394,48 @@ export function Utilities() {
         />
       </Section>
 
+      {/* Backup & Restore */}
+      <Section title="Backup & Restore">
+        <Row
+          icon={<HardDrive className="w-4 h-4" />}
+          label="Create Backup"
+          description="Save a complete snapshot of your database. Multiple backups can be stored and restored individually."
+          action={
+            <button
+              onClick={() => createBackupMutation.mutate()}
+              disabled={createBackupMutation.isPending}
+              className="btn-primary text-sm flex items-center gap-1.5"
+            >
+              {createBackupMutation.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <HardDrive className="w-3.5 h-3.5" />}
+              Back Up Now
+            </button>
+          }
+        />
+
+        {backups.length > 0 && (
+          <div className="px-5 pb-4 space-y-2">
+            {backups.map(backup => (
+              <BackupItem
+                key={backup.id}
+                backup={backup}
+                isRestoring={activeBackupOp?.id === backup.id && activeBackupOp.op === 'restore'}
+                isDeleting={activeBackupOp?.id === backup.id && activeBackupOp.op === 'delete'}
+                onRestore={() => setConfirm({ type: 'restore', backup })}
+                onDelete={() => setConfirm({ type: 'deleteBackup', backup })}
+              />
+            ))}
+          </div>
+        )}
+
+        {backups.length === 0 && !createBackupMutation.isPending && (
+          <div className="px-5 pb-4">
+            <p className="text-xs text-slate-400">No backups yet. Click "Back Up Now" to create your first snapshot.</p>
+          </div>
+        )}
+      </Section>
+
       {/* SD card detection */}
       <Section title="Device Detection">
         <Row
@@ -357,6 +493,32 @@ export function Utilities() {
           confirmLabel="Yes, delete everything"
           danger
           onConfirm={() => deleteMutation.mutate()}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm !== null && typeof confirm === 'object' && confirm.type === 'restore' && (
+        <ConfirmDialog
+          title="Restore this backup?"
+          body={`All current data will be replaced with the snapshot from ${fmtBackupDate(confirm.backup.created_at)}. This cannot be undone.`}
+          confirmLabel="Yes, restore"
+          danger
+          onConfirm={() => {
+            setActiveBackupOp({ id: confirm.backup.id, op: 'restore' })
+            restoreBackupMutation.mutate(confirm.backup.id)
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm !== null && typeof confirm === 'object' && confirm.type === 'deleteBackup' && (
+        <ConfirmDialog
+          title="Delete this backup?"
+          body={`The snapshot from ${fmtBackupDate(confirm.backup.created_at)} will be permanently removed.`}
+          confirmLabel="Delete backup"
+          danger={false}
+          onConfirm={() => {
+            setActiveBackupOp({ id: confirm.backup.id, op: 'delete' })
+            deleteBackupMutation.mutate(confirm.backup.id)
+          }}
           onCancel={() => setConfirm(null)}
         />
       )}

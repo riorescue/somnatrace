@@ -62,3 +62,44 @@ func (h *UtilitiesHandler) Detect(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"cards": cards})
 }
+
+// ListBackups handles GET /api/v1/backups and returns all saved backup snapshots.
+func (h *UtilitiesHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
+	backups, err := h.svc.ListBackups()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list backups")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"backups": backups})
+}
+
+// CreateBackup handles POST /api/v1/backups and creates a new database snapshot.
+func (h *UtilitiesHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
+	backup, err := h.svc.CreateBackup()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "backup failed")
+		return
+	}
+	writeJSON(w, http.StatusCreated, backup)
+}
+
+// RestoreBackup handles POST /api/v1/backups/{id}/restore and replaces all
+// current data with the contents of the named backup.
+func (h *UtilitiesHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := h.svc.RestoreBackup(id); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// DeleteBackup handles DELETE /api/v1/backups/{id} and removes the named backup.
+func (h *UtilitiesHandler) DeleteBackup(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := h.svc.DeleteBackup(id); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}

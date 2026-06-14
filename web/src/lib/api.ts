@@ -1,4 +1,4 @@
-import type { AppSettings, DbStats, DetectedCard, Device, DailySummary, Event, Finding, HealthStatus, Import, InsightsData, RuleStatus, Session, SessionCandidate, SessionSignals } from '@/types'
+import type { AppSettings, Backup, DbStats, DetectedCard, Device, DailySummary, Event, Finding, HealthStatus, Import, InsightsData, RuleStatus, Session, SessionCandidate, SessionSignals } from '@/types'
 
 const BASE = '/api/v1'
 
@@ -75,6 +75,17 @@ export const api = {
       request('/maintenance/vacuum', { method: 'POST' }),
     detect: (): Promise<{ cards: DetectedCard[] }> =>
       request('/detect'),
+  },
+
+  backups: {
+    list: (): Promise<{ backups: Backup[] }> =>
+      request('/backups'),
+    create: (): Promise<Backup> =>
+      request('/backups', { method: 'POST' }),
+    restore: (id: string): Promise<{ status: string }> =>
+      request(`/backups/${id}/restore`, { method: 'POST' }),
+    delete: (id: string): Promise<{ status: string }> =>
+      request(`/backups/${id}`, { method: 'DELETE' }),
   },
 
   rules: {

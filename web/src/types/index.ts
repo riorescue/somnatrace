@@ -168,3 +168,9 @@ export interface AppSettings {
   // null when no sessions have been imported yet
   first_session_date: string | null
 }
+
+export interface Backup {
+  id: string
+  created_at: string
+  size_bytes: number
+}

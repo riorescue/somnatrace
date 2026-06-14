@@ -1,12 +1,21 @@
 package service
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"time"
 
 	"github.com/somnatrace/somnatrace/internal/db"
 	"github.com/somnatrace/somnatrace/internal/models"
 )
+
+var backupIDPattern = regexp.MustCompile(`^\d{8}-\d{6}$`)
 
 // UtilitiesService exposes maintenance operations: database statistics,
 // bulk data deletion, WAL vacuuming, and SD card detection.
@@ -100,4 +109,138 @@ func resmedMountCandidates() []string {
 		}
 	}
 	return paths
+}
+
+// backupDir returns the directory where database backups are stored.
+func (s *UtilitiesService) backupDir() string {
+	return filepath.Join(filepath.Dir(s.db.Path), "backups")
+}
+
+// CreateBackup checkpoints the WAL and writes a clean copy of the database to
+// the backups directory using VACUUM INTO. Returns the new backup's metadata.
+func (s *UtilitiesService) CreateBackup() (*models.Backup, error) {
+	if err := os.MkdirAll(s.backupDir(), 0755); err != nil {
+		return nil, fmt.Errorf("create backup dir: %w", err)
+	}
+
+	id := time.Now().Format("20060102-150405")
+	dest := filepath.Join(s.backupDir(), "somnatrace-"+id+".db")
+
+	if _, err := s.db.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
+		return nil, fmt.Errorf("checkpoint: %w", err)
+	}
+	if _, err := s.db.Exec(`VACUUM INTO ?`, dest); err != nil {
+		return nil, fmt.Errorf("vacuum into: %w", err)
+	}
+
+	fi, err := os.Stat(dest)
+	if err != nil {
+		return nil, fmt.Errorf("stat backup: %w", err)
+	}
+	return &models.Backup{ID: id, CreatedAt: fi.ModTime(), SizeBytes: fi.Size()}, nil
+}
+
+// ListBackups returns all backup snapshots in the backups directory, newest first.
+func (s *UtilitiesService) ListBackups() ([]models.Backup, error) {
+	entries, err := os.ReadDir(s.backupDir())
+	if os.IsNotExist(err) {
+		return []models.Backup{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var backups []models.Backup
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasPrefix(name, "somnatrace-") || !strings.HasSuffix(name, ".db") {
+			continue
+		}
+		id := strings.TrimSuffix(strings.TrimPrefix(name, "somnatrace-"), ".db")
+		if !backupIDPattern.MatchString(id) {
+			continue
+		}
+		fi, err := e.Info()
+		if err != nil {
+			continue
+		}
+		backups = append(backups, models.Backup{ID: id, CreatedAt: fi.ModTime(), SizeBytes: fi.Size()})
+	}
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].CreatedAt.After(backups[j].CreatedAt)
+	})
+	return backups, nil
+}
+
+// RestoreBackup replaces all current data with the contents of the named backup.
+// It uses SQL ATTACH so no server restart is required.
+func (s *UtilitiesService) RestoreBackup(id string) error {
+	if !backupIDPattern.MatchString(id) {
+		return fmt.Errorf("invalid backup id")
+	}
+	src := filepath.Join(s.backupDir(), "somnatrace-"+id+".db")
+	if _, err := os.Stat(src); os.IsNotExist(err) {
+		return fmt.Errorf("backup not found: %s", id)
+	}
+
+	ctx := context.Background()
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("get conn: %w", err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, `PRAGMA foreign_keys=OFF`); err != nil {
+		return err
+	}
+	if _, err := conn.ExecContext(ctx, `ATTACH DATABASE ? AS bk`, src); err != nil {
+		conn.ExecContext(ctx, `PRAGMA foreign_keys=ON`)
+		return fmt.Errorf("attach: %w", err)
+	}
+
+	restoreErr := restoreFromAttached(ctx, conn)
+
+	conn.ExecContext(ctx, `DETACH DATABASE bk`)
+	conn.ExecContext(ctx, `PRAGMA foreign_keys=ON`)
+	return restoreErr
+}
+
+func restoreFromAttached(ctx context.Context, conn *sql.Conn) error {
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	tables := []string{
+		"devices", "imports", "sessions", "daily_summaries",
+		"events", "session_signals", "session_findings",
+		"settings_snapshots", "device_identification_snapshots",
+		"app_settings", "rule_settings",
+	}
+	for _, t := range tables {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM main.`+t); err != nil {
+			return fmt.Errorf("clear %s: %w", t, err)
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO main.`+t+` SELECT * FROM bk.`+t); err != nil {
+			if !strings.Contains(err.Error(), "no such table") {
+				return fmt.Errorf("restore %s: %w", t, err)
+			}
+		}
+	}
+	return tx.Commit()
+}
+
+// DeleteBackup removes a backup snapshot file from disk.
+func (s *UtilitiesService) DeleteBackup(id string) error {
+	if !backupIDPattern.MatchString(id) {
+		return fmt.Errorf("invalid backup id")
+	}
+	path := filepath.Join(s.backupDir(), "somnatrace-"+id+".db")
+	if err := os.Remove(path); os.IsNotExist(err) {
+		return fmt.Errorf("backup not found: %s", id)
+	} else if err != nil {
+		return fmt.Errorf("remove: %w", err)
+	}
+	return nil
 }

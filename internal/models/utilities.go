@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // DbStats is the response payload for GET /api/v1/stats. It contains per-table
 // row counts and the total on-disk size of the database (main file + WAL + SHM).
 type DbStats struct {
@@ -11,4 +13,11 @@ type DbStats struct {
 // device export by the presence of Identification.json.
 type DetectedCard struct {
 	Path string `json:"path"` // absolute path to the mounted volume
+}
+
+// Backup describes a single database backup snapshot stored on disk.
+type Backup struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	SizeBytes int64     `json:"size_bytes"`
 }
