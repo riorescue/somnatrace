@@ -1,0 +1,33 @@
+# Binaries
+somnatrace
+somnatrace.exe
+seed
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend build output (committed only at release)
+internal/web/dist/
+!internal/web/dist/index.html
+
+# Frontend tooling
+web/node_modules/
+web/.vite/
+
+# Go tooling
+*.test
+*.out
+vendor/
+
+# Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Env
+.env
+.env.local
+
+# Data directories
+data/

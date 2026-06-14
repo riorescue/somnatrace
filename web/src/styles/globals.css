@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sidebar-width: 240px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@media print {
+  /* ── Page setup ──────────────────────────────────────────────────────────── */
+  @page { margin: 1.5cm; }
+
+  /* Preserve colors — charts, severity pills, event badges */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  /* ── Layout ──────────────────────────────────────────────────────────────── */
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Root flex container uses h-screen overflow-hidden */
+  #app-layout {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  aside { display: none !important; }
+
+  main {
+    margin-left: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* ── Hide interactive chrome ─────────────────────────────────────────────── */
+  .no-print { display: none !important; }
+
+  /* Recharts brush slider — takes space at bottom of each chart */
+  .recharts-brush { display: none !important; }
+
+  /* ── Cards ───────────────────────────────────────────────────────────────── */
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ── Typography / links ──────────────────────────────────────────────────── */
+  a { color: inherit !important; text-decoration: none !important; }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+  }
+
+  .stat-card {
+    @apply card p-5 flex flex-col gap-1;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium
+           hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-slate-600 text-sm font-medium
+           hover:bg-slate-100 transition-colors;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success { @apply badge bg-emerald-50 text-emerald-700; }
+  .badge-warning { @apply badge bg-amber-50 text-amber-700; }
+  .badge-error   { @apply badge bg-red-50 text-red-700; }
+  .badge-pending { @apply badge bg-slate-100 text-slate-600; }
+  .badge-running { @apply badge bg-brand-50 text-brand-700; }
+}

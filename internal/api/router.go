@@ -1,0 +1,61 @@
+// Package api wires HTTP routes to their handler implementations and applies
+// shared middleware (CORS, request logging). All routes are prefixed with
+// /api/v1/. The embedded frontend is registered separately by the web package.
+package api
+
+import (
+	"net/http"
+
+	"github.com/somnatrace/somnatrace/internal/api/handlers"
+	"github.com/somnatrace/somnatrace/internal/api/middleware"
+	"github.com/somnatrace/somnatrace/internal/config"
+	"github.com/somnatrace/somnatrace/internal/service"
+	"github.com/somnatrace/somnatrace/internal/web"
+)
+
+// NewRouter constructs the root HTTP handler with all API routes registered
+// and CORS + logging middleware applied.
+func NewRouter(cfg *config.Config, svc *service.Services) http.Handler {
+	mux := http.NewServeMux()
+
+	health := handlers.NewHealthHandler(cfg)
+	devices := handlers.NewDevicesHandler(svc.Devices)
+	imports := handlers.NewImportsHandler(svc.Imports)
+	sessions := handlers.NewSessionsHandler(svc.Sessions, svc.Analysis)
+	summaries := handlers.NewSummariesHandler(svc.Summaries)
+	insights := handlers.NewInsightsHandler(svc.Summaries)
+	utilities := handlers.NewUtilitiesHandler(svc.Utilities)
+	rules := handlers.NewRulesHandler(svc.Rules)
+
+	mux.Handle("GET /api/v1/health", health)
+	mux.HandleFunc("GET /api/v1/devices", devices.List)
+	mux.HandleFunc("GET /api/v1/imports", imports.List)
+	mux.HandleFunc("POST /api/v1/imports", imports.Create)
+	mux.HandleFunc("GET /api/v1/imports/{id}/candidates", imports.Candidates)
+	mux.HandleFunc("POST /api/v1/imports/{id}/confirm", imports.Confirm)
+	mux.HandleFunc("GET /api/v1/sessions", sessions.List)
+	mux.HandleFunc("GET /api/v1/sessions/{id}", sessions.Get)
+	mux.HandleFunc("GET /api/v1/sessions/{id}/signals", sessions.GetSignals)
+	mux.HandleFunc("GET /api/v1/sessions/{id}/settings", sessions.GetSettings)
+	mux.HandleFunc("GET /api/v1/sessions/{id}/identification", sessions.GetIdentification)
+	mux.HandleFunc("GET /api/v1/sessions/{id}/findings", sessions.GetFindings)
+	mux.HandleFunc("GET /api/v1/sessions/{id}/events", sessions.GetEvents)
+	mux.HandleFunc("POST /api/v1/sessions/{id}/analyze", sessions.Reanalyze)
+	mux.HandleFunc("GET /api/v1/summaries/daily", summaries.ListDaily)
+	mux.HandleFunc("GET /api/v1/insights", insights.Get)
+	mux.HandleFunc("GET /api/v1/stats", utilities.Stats)
+	mux.HandleFunc("DELETE /api/v1/data", utilities.DeleteAll)
+	mux.HandleFunc("POST /api/v1/maintenance/vacuum", utilities.Vacuum)
+	mux.HandleFunc("GET /api/v1/detect", utilities.Detect)
+	mux.HandleFunc("GET /api/v1/rules", rules.List)
+	mux.HandleFunc("PATCH /api/v1/rules/{id}", rules.SetEnabled)
+
+	// In production the embedded frontend is served here with SPA fallback.
+	// In development this is a no-op; Vite handles the UI on port 5173.
+	web.RegisterStaticHandler(mux, cfg)
+
+	var h http.Handler = mux
+	h = middleware.Logger(h)
+	h = middleware.CORS(h)
+	return h
+}
