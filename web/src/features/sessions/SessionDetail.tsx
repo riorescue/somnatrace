@@ -19,7 +19,7 @@ import { FullPageSpinner } from '@/components/LoadingSpinner'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { FindingsCard } from './FindingsCard'
 import { EventsCard } from './EventsCard'
-import type { Event, SignalPoint } from '@/types'
+import type { Event, Finding, SignalPoint } from '@/types'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -136,6 +136,7 @@ function SignalChart({
       contentStyle={{ fontSize: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}
       formatter={(v: number) => [`${v.toFixed(2)} ${tooltipUnit}`, '']}
       labelFormatter={(t: number) => fmtTooltip(t)}
+      animationDuration={0}
     />
   )
   const refs = refLines?.map((rl, i) => (
@@ -483,7 +484,7 @@ function FlowWaveformCard({
           tooltipUnit="L/s"
           type="area"
           height={h}
-          chartSyncId="session-flow"
+          chartSyncId="session"
           refLines={[
             { y:  0.8, stroke: '#10b981', dash: '3 3', label: '0.8 L/s' },
             { y: -0.8, stroke: '#10b981', dash: '3 3', label: '-0.8 L/s' },
@@ -850,6 +851,18 @@ export function SessionDetail() {
     [],
   )
 
+  const handleFindingClick = useCallback((finding: Finding) => {
+    if (finding.start_sec == null) return
+    const startSec = finding.start_sec
+    const endSec = finding.end_sec ?? startSec
+    const duration = endSec - startSec
+    const windowSec = Math.min(300, Math.max(90, duration * 4))
+    const center = startSec + duration / 2
+    const zoomStart = Math.max(0, center - windowSec / 2)
+    setSharedZoom([zoomStart, zoomStart + windowSec])
+    chartsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
   const handleEventClick = useCallback((event: Event, sessionStart: string) => {
     const sessionStartMs = new Date(sessionStart).getTime()
     const eventStartSec = (new Date(event.start_time).getTime() - sessionStartMs) / 1000
@@ -905,6 +918,13 @@ export function SessionDetail() {
     retry: false,
   })
 
+  const { data: appSettings } = useQuery({
+    queryKey: ['app-settings'],
+    queryFn: api.appSettings.get,
+  })
+
+  const warnP95 = appSettings?.leak_warn_p95 ?? 24
+
   if (isLoading) return <FullPageSpinner />
   if (isError) return <ErrorBanner message="Failed to load session." />
   if (!sess) return <ErrorBanner message="Session not found." />
@@ -918,8 +938,30 @@ export function SessionDetail() {
     document.title = prev
   }
 
+  const printedOn = new Date().toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  })
+
   return (
     <div>
+      {/* Print-only masthead */}
+      <div className="hidden print:block mb-8 pb-5 border-b-2 border-slate-800">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">SomnaTrace</p>
+            <h1 className="text-3xl font-bold text-slate-900">Session Report</h1>
+            <p className="text-slate-600 mt-1">
+              {formatDate(sess.start_time)} · {formatTime(sess.start_time)} → {formatTime(sess.end_time)}
+            </p>
+          </div>
+          <div className="text-right text-xs text-slate-500 space-y-0.5">
+            <p className="font-medium text-slate-700">{printedOn}</p>
+            <p>SomnaTrace v0.1 · Local-first CPAP analytics</p>
+            <p>Not a substitute for professional medical advice</p>
+          </div>
+        </div>
+      </div>
+
       <PageHeader
         title={`Session — ${formatDate(sess.start_time)}`}
         description={`${formatTime(sess.start_time)} → ${formatTime(sess.end_time)}`}
@@ -929,9 +971,9 @@ export function SessionDetail() {
               <ArrowLeft className="w-4 h-4" />
               All Sessions
             </Link>
-            <button onClick={handlePrint} className="btn-ghost">
+            <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
               <Printer className="w-4 h-4" />
-              Generate Report
+              Print Report
             </button>
           </div>
         }
@@ -1037,16 +1079,19 @@ export function SessionDetail() {
                 <ChartCard
                   title="Leak Rate" subtitle="L/min · 2 s"
                   icon={<TrendingUp className="w-4 h-4" />}
-                  info={CHART_INFO.leak}
+                  info={{
+                    ...CHART_INFO.leak,
+                    range: `Intentional vent flow is typically 20–30 L/min. Large Leak is unintentional leak >${warnP95} L/min.`,
+                  }}
                   refLegend={[
-                    { y: 24, stroke: '#ef4444', dash: '4 4', label: '24 L/min — large leak threshold' },
+                    { y: warnP95, stroke: '#ef4444', dash: '4 4', label: `${warnP95} L/min — large leak threshold` },
                   ]}
                   render={(h) => (
                     <SignalChart data={signals.leak} color="#f59e0b"
                       startTime={sess.start_time}
                       tooltipUnit="L/min" height={h}
                       refLines={[
-                        { y: 24, stroke: '#ef4444', dash: '4 4', label: '24 L/min' },
+                        { y: warnP95, stroke: '#ef4444', dash: '4 4', label: `${warnP95} L/min` },
                       ]}
                       zoomDomain={sharedZoom}
                       onViewChange={handleZoom} />
@@ -1078,6 +1123,8 @@ export function SessionDetail() {
         findings={findingsData?.findings ?? []}
         sessionStart={sess.start_time}
         sessionId={id!}
+        analyzedAt={findingsData?.analyzed_at}
+        onFindingClick={handleFindingClick}
       />
 
       {/* Metadata */}
@@ -1108,6 +1155,12 @@ export function SessionDetail() {
 
       {/* Machine settings */}
       {machineSettings && <MachineSettingsCard settings={machineSettings} />}
+
+      {/* Print-only disclaimer */}
+      <div className="hidden print:block mt-8 pt-4 border-t border-slate-200 text-xs text-slate-400 text-center">
+        This report is generated from data recorded by your CPAP/APAP device and is for informational purposes only.
+        It does not constitute medical advice. Consult your healthcare provider regarding your therapy results.
+      </div>
     </div>
   )
 }

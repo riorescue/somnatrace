@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/somnatrace/somnatrace/internal/models"
 	"github.com/somnatrace/somnatrace/internal/service"
@@ -141,7 +142,11 @@ func (h *SessionsHandler) GetFindings(w http.ResponseWriter, r *http.Request) {
 	if findings == nil {
 		findings = make([]models.Finding, 0)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"findings": findings})
+	resp := map[string]any{"findings": findings}
+	if t, err := h.svc.GetFindingsAnalyzedAt(id); err == nil && t != nil {
+		resp["analyzed_at"] = t.Format(time.RFC3339)
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // GetEvents handles GET /api/v1/sessions/{id}/events and returns the scored

@@ -26,6 +26,7 @@ func NewRouter(cfg *config.Config, svc *service.Services) http.Handler {
 	insights := handlers.NewInsightsHandler(svc.Summaries)
 	utilities := handlers.NewUtilitiesHandler(svc.Utilities)
 	rules := handlers.NewRulesHandler(svc.Rules)
+	appSettings := handlers.NewAppSettingsHandler(svc.AppSettings)
 
 	mux.Handle("GET /api/v1/health", health)
 	mux.HandleFunc("GET /api/v1/devices", devices.List)
@@ -49,6 +50,8 @@ func NewRouter(cfg *config.Config, svc *service.Services) http.Handler {
 	mux.HandleFunc("GET /api/v1/detect", utilities.Detect)
 	mux.HandleFunc("GET /api/v1/rules", rules.List)
 	mux.HandleFunc("PATCH /api/v1/rules/{id}", rules.SetEnabled)
+	mux.HandleFunc("GET /api/v1/settings", appSettings.Get)
+	mux.HandleFunc("PATCH /api/v1/settings", appSettings.Patch)
 
 	// In production the embedded frontend is served here with SPA fallback.
 	// In development this is a no-op; Vite handles the UI on port 5173.

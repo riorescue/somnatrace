@@ -130,9 +130,10 @@ interface TimelineProps {
   visibleTypes: Set<EventType>
   sessionStart: string
   sessionEnd: string
+  onEventClick?: (event: Event) => void
 }
 
-function Timeline({ allEvents, visibleTypes, sessionStart, sessionEnd }: TimelineProps) {
+function Timeline({ allEvents, visibleTypes, sessionStart, sessionEnd, onEventClick }: TimelineProps) {
   const startMs = new Date(sessionStart).getTime()
   const endMs = new Date(sessionEnd).getTime()
   const durationMs = endMs - startMs
@@ -163,8 +164,9 @@ function Timeline({ allEvents, visibleTypes, sessionStart, sessionEnd }: Timelin
             <div
               key={e.id}
               title={`${cfg.label} — ${fmtTime(e.start_time)}, ${fmtDuration(e.duration_seconds)}`}
-              className={`absolute top-1 bottom-1 rounded-sm ${cfg.color} min-w-[3px] cursor-default transition-opacity ${dimmed ? 'opacity-15' : 'opacity-80'}`}
+              className={`absolute top-1 bottom-1 rounded-sm ${cfg.color} min-w-[3px] transition-opacity ${dimmed ? 'opacity-15' : 'opacity-80'} ${onEventClick ? 'cursor-pointer hover:opacity-100 hover:top-0 hover:bottom-0' : 'cursor-default'}`}
               style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+              onClick={onEventClick ? () => onEventClick(e) : undefined}
             />
           )
         })}
@@ -182,7 +184,7 @@ function Timeline({ allEvents, visibleTypes, sessionStart, sessionEnd }: Timelin
 
 // ─── Event list row ───────────────────────────────────────────────────────────
 
-function EventRow({ event, onZoom }: { event: Event; onZoom?: () => void }) {
+function EventRow({ event, onZoom, timeSinceLast }: { event: Event; onZoom?: () => void; timeSinceLast?: number | null }) {
   const cfg = EVENT_CONFIG[event.type] ?? EVENT_CONFIG.hypopnea
   return (
     <div
@@ -197,7 +199,10 @@ function EventRow({ event, onZoom }: { event: Event; onZoom?: () => void }) {
       <div className="flex-1 min-w-0">
         <span className={`text-xs font-semibold ${cfg.text}`}>{cfg.label}</span>
       </div>
-      <span className="text-xs font-mono text-slate-500 shrink-0">{fmtTime(event.start_time)}</span>
+      <span className="text-[10px] font-mono text-slate-400 w-16 text-right shrink-0" title="Time since previous event">
+        {timeSinceLast != null ? `+${fmtDuration(timeSinceLast)}` : ''}
+      </span>
+      <span className="text-xs font-mono text-slate-500 w-24 shrink-0">{fmtTime(event.start_time)}</span>
       <span className="text-xs font-mono text-slate-400 w-12 text-right shrink-0">
         {fmtDuration(event.duration_seconds)}
       </span>
@@ -250,7 +255,7 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
       <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
         <Zap className="w-4 h-4 text-brand-500" />
         Events
-        <span className="text-xs font-normal text-slate-400 ml-1">device-scored annotations from EVE file</span>
+        <span className="text-xs font-normal text-slate-400 ml-1">device-scored annotations</span>
         <span className="ml-auto text-xs font-normal text-slate-400 tabular-nums">{countLabel}</span>
         <button
           onClick={() => setShowInfo(true)}
@@ -309,15 +314,31 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
             visibleTypes={filter}
             sessionStart={sessionStart}
             sessionEnd={sessionEnd}
+            onEventClick={onEventClick}
           />
-          <div className="divide-y divide-slate-100">
-            {visible.map(e => (
-              <EventRow
-                key={e.id}
-                event={e}
-                onZoom={onEventClick ? () => onEventClick(e) : undefined}
-              />
-            ))}
+          <div className="flex items-center gap-3 pb-1.5 -mx-1 px-1 border-b border-slate-100">
+            <span className="w-2 h-2 shrink-0" />
+            <span className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Type</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 w-16 text-right shrink-0">Gap</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 w-24 shrink-0">Time</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 w-12 text-right shrink-0">Dur.</span>
+            {onEventClick && <span className="w-3.5 shrink-0" />}
+          </div>
+          <div>
+            {visible.map((e, i) => {
+              const prev = i > 0 ? visible[i - 1] : null
+              const timeSinceLast = prev
+                ? (new Date(e.start_time).getTime() - new Date(prev.start_time).getTime()) / 1000
+                : null
+              return (
+                <EventRow
+                  key={e.id}
+                  event={e}
+                  timeSinceLast={timeSinceLast}
+                  onZoom={onEventClick ? () => onEventClick(e) : undefined}
+                />
+              )
+            })}
           </div>
         </>
       )}

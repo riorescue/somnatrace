@@ -1,4 +1,4 @@
-import type { DbStats, DetectedCard, Device, DailySummary, Event, Finding, HealthStatus, Import, InsightsData, RuleStatus, Session, SessionCandidate, SessionSignals } from '@/types'
+import type { AppSettings, DbStats, DetectedCard, Device, DailySummary, Event, Finding, HealthStatus, Import, InsightsData, RuleStatus, Session, SessionCandidate, SessionSignals } from '@/types'
 
 const BASE = '/api/v1'
 
@@ -50,7 +50,7 @@ export const api = {
       request(`/sessions/${id}/settings`),
     identification: (id: string): Promise<Record<string, unknown>> =>
       request(`/sessions/${id}/identification`),
-    findings: (id: string): Promise<{ findings: Finding[] }> =>
+    findings: (id: string): Promise<{ findings: Finding[]; analyzed_at?: string }> =>
       request(`/sessions/${id}/findings`),
     events: (id: string): Promise<{ events: Event[] }> =>
       request(`/sessions/${id}/events`),
@@ -82,5 +82,12 @@ export const api = {
       request('/rules'),
     setEnabled: (id: string, enabled: boolean): Promise<{ enabled: boolean }> =>
       request(`/rules/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+  },
+
+  appSettings: {
+    get: (): Promise<AppSettings> =>
+      request('/settings'),
+    patch: (body: Partial<Pick<AppSettings, 'compliance_hours_threshold' | 'compliance_pct_threshold' | 'leak_warn_p95' | 'leak_alert_p95'>>): Promise<AppSettings> =>
+      request('/settings', { method: 'PATCH', body: JSON.stringify(body) }),
   },
 }

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/somnatrace/somnatrace/internal/models"
 )
@@ -85,6 +86,33 @@ func (s *SessionService) GetFindings(sessionID string) ([]models.Finding, error)
 		findings = append(findings, f)
 	}
 	return findings, rows.Err()
+}
+
+// GetFindingsAnalyzedAt returns the UTC timestamp of the most recent analysis
+// run for the session (i.e. MAX(created_at) across all findings rows).
+// Returns nil if no findings exist yet.
+func (s *SessionService) GetFindingsAnalyzedAt(sessionID string) (*time.Time, error) {
+	var v sql.NullString
+	err := s.db.QueryRow(
+		`SELECT MAX(created_at) FROM session_findings WHERE session_id = ?`,
+		sessionID,
+	).Scan(&v)
+	if err != nil {
+		return nil, fmt.Errorf("get findings analyzed_at: %w", err)
+	}
+	if !v.Valid || v.String == "" {
+		return nil, nil
+	}
+	// modernc.org/sqlite stores time.Time values using Go's time.String() format
+	// ("2006-01-02 15:04:05.999999999 -0700 MST"). Accept that and RFC3339 for
+	// rows written after the storage fix below.
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05.999999999 -0700 MST"} {
+		if t, err2 := time.Parse(layout, v.String); err2 == nil {
+			t = t.UTC()
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("could not parse findings analyzed_at: %q", v.String)
 }
 
 // GetSignals returns the stored EDF signal time-series for a session.

@@ -73,7 +73,7 @@ func (s *AnalysisService) RunAndStore(sessionID string) error {
 		return fmt.Errorf("clear findings: %w", err)
 	}
 
-	now := time.Now().UTC()
+	nowStr := time.Now().UTC().Format(time.RFC3339)
 	for _, f := range findings {
 		id := newID()
 		startSec := sql.NullFloat64{}
@@ -89,7 +89,7 @@ func (s *AnalysisService) RunAndStore(sessionID string) error {
 			  (id, session_id, rule_id, title, detail, severity, start_sec, end_sec, created_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, id, sessionID, f.RuleID, f.Title, f.Detail, string(f.Severity),
-			startSec, endSec, now,
+			startSec, endSec, nowStr,
 		); err != nil {
 			return fmt.Errorf("insert finding %s: %w", f.RuleID, err)
 		}

@@ -8,16 +8,20 @@ import {
   Wrench,
   TrendingUp,
   Stethoscope,
+  FileText,
+  Info,
 } from 'lucide-react'
 
 const nav = [
-  { to: '/',           label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/insights',   label: 'Insights',  icon: TrendingUp },
-  { to: '/sessions',   label: 'Sessions',  icon: Moon },
-  { to: '/imports',    label: 'Imports',   icon: Upload },
-  { to: '/rules',      label: 'Rules',     icon: Stethoscope },
-  { to: '/utilities',  label: 'Utilities', icon: Wrench },
-  { to: '/settings',   label: 'Settings',  icon: Settings },
+  { to: '/',          label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/insights',  label: 'Insights',  icon: TrendingUp },
+  { to: '/sessions',  label: 'Sessions',  icon: Moon },
+  { to: '/rules',     label: 'Rules',     icon: Stethoscope },
+  { to: '/reports',   label: 'Reports',   icon: FileText },
+  { to: '/imports',   label: 'Imports',   icon: Upload },
+  { to: '/utilities', label: 'Utilities', icon: Wrench },
+  { to: '/settings',  label: 'Settings',  icon: Settings },
+  { to: '/about',     label: 'About',     icon: Info },
 ]
 
 export function Sidebar() {

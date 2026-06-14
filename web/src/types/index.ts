@@ -159,3 +159,12 @@ export interface RuleStatus {
   severity: FindingSeverity
   enabled: boolean
 }
+
+export interface AppSettings {
+  compliance_hours_threshold: number
+  compliance_pct_threshold: number
+  leak_warn_p95: number
+  leak_alert_p95: number
+  // null when no sessions have been imported yet
+  first_session_date: string | null
+}

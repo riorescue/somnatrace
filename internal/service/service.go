@@ -12,25 +12,27 @@ import (
 // Services groups all domain services and is passed to the HTTP router as a
 // single dependency.
 type Services struct {
-	Imports   *ImportService
-	Sessions  *SessionService
-	Summaries *SummaryService
-	Devices   *DeviceService
-	Utilities *UtilitiesService
-	Analysis  *AnalysisService
-	Rules     *RulesService
+	Imports     *ImportService
+	Sessions    *SessionService
+	Summaries   *SummaryService
+	Devices     *DeviceService
+	Utilities   *UtilitiesService
+	Analysis    *AnalysisService
+	Rules       *RulesService
+	AppSettings *AppSettingsService
 }
 
 // New constructs all service types wired to the given database connection.
 func New(database *db.DB) *Services {
 	ana := &AnalysisService{db: database, engine: analysis.DefaultEngine()}
 	return &Services{
-		Imports:   &ImportService{db: database, ana: ana},
-		Sessions:  &SessionService{db: database},
-		Summaries: &SummaryService{db: database},
-		Devices:   &DeviceService{db: database},
-		Utilities: &UtilitiesService{db: database},
-		Analysis:  ana,
-		Rules:     &RulesService{db: database},
+		Imports:     &ImportService{db: database, ana: ana},
+		Sessions:    &SessionService{db: database},
+		Summaries:   &SummaryService{db: database},
+		Devices:     &DeviceService{db: database},
+		Utilities:   &UtilitiesService{db: database},
+		Analysis:    ana,
+		Rules:       &RulesService{db: database},
+		AppSettings: &AppSettingsService{db: database},
 	}
 }

@@ -12,7 +12,7 @@ import {
 } from 'recharts'
 import {
   TrendingUp, Flame, Trophy, Star, Moon, Zap, Activity,
-  Gauge, Target,
+  Gauge, Target, Info,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -82,7 +82,7 @@ function ahiColor(ahi: number): string {
 function fillDateRange(summaries: DailySummary[], days: number): DailySummary[] {
   const byDate = new Map(summaries.map(s => [s.date, s]))
   const result: DailySummary[] = []
-  for (let i = days - 1; i >= 0; i--) {
+  for (let i = days; i >= 1; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
     const key = d.toISOString().slice(0, 10)
@@ -102,9 +102,10 @@ function fillDateRange(summaries: DailySummary[], days: number): DailySummary[] 
 interface CalendarProps {
   summaries: DailySummary[]
   days: number
+  firstSessionDate: string | null
 }
 
-function NightCalendar({ summaries, days }: CalendarProps) {
+function NightCalendar({ summaries, days, firstSessionDate }: CalendarProps) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState<string | null>(null)
 
@@ -152,6 +153,7 @@ function NightCalendar({ summaries, days }: CalendarProps) {
 
   function cellColor(date: string, inRange: boolean): string {
     if (!inRange) return 'transparent'
+    if (firstSessionDate && date < firstSessionDate) return '#e0f2fe'
     const s = byDate.get(date)
     if (!s) return '#f1f5f9'
     if (s.usage_minutes === 0) return '#f1f5f9'
@@ -206,6 +208,7 @@ function NightCalendar({ summaries, days }: CalendarProps) {
                 key={col}
                 title={
                   !inRange ? undefined :
+                  firstSessionDate && date < firstSessionDate ? `${date}  Before therapy started` :
                   s ? `${date}  AHI ${s.ahi.toFixed(1)}  ${(s.usage_minutes / 60).toFixed(1)}h` :
                   `${date}  No session`
                 }
@@ -226,6 +229,11 @@ function NightCalendar({ summaries, days }: CalendarProps) {
 
       {/* Legend */}
       <div className="flex items-center gap-4 mt-3 flex-wrap">
+        {firstSessionDate && (
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#e0f2fe' }} /> Before therapy
+          </div>
+        )}
         <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
           <div className="w-3 h-3 rounded-sm bg-slate-100" /> No session
         </div>
@@ -286,11 +294,36 @@ export function Insights() {
     queryFn: () => api.insights(days),
   })
 
+  const { data: settingsData } = useQuery({
+    queryKey: ['app-settings'],
+    queryFn: api.appSettings.get,
+  })
+
+  const hoursThreshold = settingsData?.compliance_hours_threshold ?? 4.0
+  const pctThreshold = settingsData?.compliance_pct_threshold ?? 70.0
+  const firstSessionDate = settingsData?.first_session_date ?? null
+
+  const { isNewUser, effectiveDays } = useMemo(() => {
+    const today = new Date()
+    const windowStart = new Date(today)
+    windowStart.setDate(windowStart.getDate() - days)
+    const windowStartDate = windowStart.toISOString().slice(0, 10)
+    const isNewUser = firstSessionDate !== null && firstSessionDate > windowStartDate
+    let effectiveDays = days
+    if (isNewUser && firstSessionDate) {
+      const first = new Date(firstSessionDate + 'T12:00:00')
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      effectiveDays = Math.max(1, Math.round((yesterday.getTime() - first.getTime()) / 86400_000) + 1)
+    }
+    return { isNewUser, effectiveDays }
+  }, [firstSessionDate, days])
+
   const stats = useMemo(() => {
     const summaries = data?.summaries ?? []
     if (!summaries.length) return null
 
-    const compliantNights = summaries.filter(s => s.usage_minutes >= 240)
+    const compliantNights = summaries.filter(s => s.usage_minutes >= hoursThreshold * 60)
     const nightsWithSession = summaries.filter(s => s.session_id !== '')
 
     const avgAHI = nightsWithSession.length
@@ -299,7 +332,7 @@ export function Insights() {
     const avgUsageHrs = nightsWithSession.length
       ? nightsWithSession.reduce((a, s) => a + s.usage_minutes, 0) / nightsWithSession.length / 60
       : 0
-    const complianceRate = (compliantNights.length / days) * 100
+    const complianceRate = (compliantNights.length / effectiveDays) * 100
     const bestNight = nightsWithSession.reduce<DailySummary | null>(
       (best, s) => (!best || s.ahi < best.ahi) ? s : best, null
     )
@@ -307,7 +340,7 @@ export function Insights() {
     const mostCommonEvent = EVENT_ORDER.find(t => data?.event_counts?.[t])
 
     return { avgAHI, avgUsageHrs, complianceRate, bestNight, totalEvents, mostCommonEvent, nightsWithSession }
-  }, [data, days])
+  }, [data, days, hoursThreshold, effectiveDays])
 
   // Chart data
   const allDates = useMemo(() => fillDateRange(data?.summaries ?? [], days), [data, days])
@@ -407,6 +440,17 @@ export function Insights() {
         </div>
       ) : (
         <>
+          {isNewUser && firstSessionDate && (
+            <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 mb-6 text-sm text-sky-800">
+              <Info className="w-4 h-4 text-sky-500 mt-0.5 shrink-0" />
+              <span>
+                Metrics are calculated from your first session on{' '}
+                <strong>{firstSessionDate}</strong>.
+                Only nights since then count toward your compliance rate.
+              </span>
+            </div>
+          )}
+
           {/* ── KPI row ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
@@ -418,8 +462,8 @@ export function Insights() {
             <StatCard
               label="Compliance Rate"
               value={stats ? `${fmt(stats.complianceRate, 0)}%` : '—'}
-              sub="nights ≥ 4 hours"
-              accent={stats && stats.complianceRate >= 70 ? 'text-emerald-600' : 'text-amber-600'}
+              sub={`nights ≥ ${hoursThreshold}h`}
+              accent={stats && stats.complianceRate >= pctThreshold ? 'text-emerald-600' : 'text-amber-600'}
             />
             <StatCard
               label="Avg Usage"
@@ -429,7 +473,7 @@ export function Insights() {
             <StatCard
               label="Therapy Nights"
               value={stats ? stats.nightsWithSession.length : '—'}
-              sub={`of ${days} days`}
+              sub={isNewUser ? `of ${effectiveDays} days (from first session)` : `of ${days} days`}
             />
           </div>
 
@@ -619,7 +663,7 @@ export function Insights() {
                 Night Quality
                 <span className="text-xs font-normal text-slate-400 ml-1">click a cell to open that session</span>
               </h2>
-              <NightCalendar summaries={data?.summaries ?? []} days={days} />
+              <NightCalendar summaries={data?.summaries ?? []} days={days} firstSessionDate={firstSessionDate} />
             </div>
           </div>
 

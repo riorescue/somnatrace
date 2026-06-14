@@ -1,5 +1,6 @@
-import { FlaskConical, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react'
+import { FlaskConical, RefreshCw, CheckCircle2, AlertCircle, ZoomIn } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type { Finding, FindingSeverity } from '@/types'
@@ -42,16 +43,29 @@ function TimeRange({ startSec, endSec, sessionStart }: { startSec?: number; endS
 
 // ─── Single finding row ───────────────────────────────────────────────────────
 
-function FindingRow({ finding, sessionStart }: { finding: Finding; sessionStart: string }) {
+function FindingRow({ finding, sessionStart, onZoom }: { finding: Finding; sessionStart: string; onZoom?: () => void }) {
+  const clickable = onZoom != null && finding.start_sec != null
   return (
-    <div className="flex gap-3 py-3.5 border-b border-slate-100 last:border-0">
+    <div
+      className={`group flex gap-3 py-3.5 border-b border-slate-100 last:border-0 -mx-1 px-1 rounded-md transition-colors ${
+        clickable ? 'cursor-pointer hover:bg-slate-50' : ''
+      }`}
+      onClick={clickable ? onZoom : undefined}
+      role={clickable ? 'button' : undefined}
+      title={clickable ? 'Zoom charts to this finding' : undefined}
+    >
       <div className="shrink-0 pt-0.5 w-16">
         <SeverityPill severity={finding.severity} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-3 mb-1">
           <p className="text-sm font-medium text-slate-800 leading-snug">{finding.title}</p>
-          <TimeRange startSec={finding.start_sec} endSec={finding.end_sec} sessionStart={sessionStart} />
+          <div className="flex items-center gap-2 shrink-0">
+            <TimeRange startSec={finding.start_sec} endSec={finding.end_sec} sessionStart={sessionStart} />
+            {clickable && (
+              <ZoomIn className="w-3.5 h-3.5 text-slate-200 group-hover:text-brand-400 transition-colors shrink-0" />
+            )}
+          </div>
         </div>
         <p className="text-xs text-slate-500 leading-relaxed">{finding.detail}</p>
         <p className="text-[10px] text-slate-300 font-mono mt-1">{finding.rule_id}</p>
@@ -185,9 +199,23 @@ interface FindingsCardProps {
   findings: Finding[]
   sessionStart: string
   sessionId: string
+  analyzedAt?: string
+  onFindingClick?: (finding: Finding) => void
 }
 
-export function FindingsCard({ findings, sessionStart, sessionId }: FindingsCardProps) {
+function fmtAnalyzedAt(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const isToday =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  if (isToday) return `Today at ${time}`
+  return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${time}`
+}
+
+export function FindingsCard({ findings, sessionStart, sessionId, analyzedAt, onFindingClick }: FindingsCardProps) {
   const queryClient = useQueryClient()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogPhase, setDialogPhase] = useState<DialogPhase>('working')
@@ -245,16 +273,24 @@ export function FindingsCard({ findings, sessionStart, sessionId }: FindingsCard
             <FlaskConical className="w-4 h-4 text-brand-500" />
             Clinical Findings
             <span className="text-xs font-normal text-slate-400 ml-1">automated rule-based analysis</span>
+            <Link to="/rules" className="text-xs font-normal text-brand-500 hover:text-brand-600 transition-colors ml-1">Rules</Link>
           </h2>
-          <button
-            onClick={handleReanalyze}
-            disabled={dialogOpen}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title="Re-run clinical analysis on this session"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Re-analyze
-          </button>
+          <div className="flex items-center gap-3">
+            {analyzedAt && (
+              <span className="text-[10px] text-slate-400 font-mono" title={new Date(analyzedAt).toLocaleString()}>
+                Last analyzed {fmtAnalyzedAt(analyzedAt)}
+              </span>
+            )}
+            <button
+              onClick={handleReanalyze}
+              disabled={dialogOpen}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              title="Re-run clinical analysis on this session"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Re-analyze
+            </button>
+          </div>
         </div>
 
         {findings.length === 0 ? (
@@ -268,7 +304,12 @@ export function FindingsCard({ findings, sessionStart, sessionId }: FindingsCard
             <SummaryBar findings={findings} />
             <div className="divide-y divide-slate-100">
               {sorted.map(f => (
-                <FindingRow key={f.id} finding={f} sessionStart={sessionStart} />
+                <FindingRow
+                  key={f.id}
+                  finding={f}
+                  sessionStart={sessionStart}
+                  onZoom={onFindingClick ? () => onFindingClick(f) : undefined}
+                />
               ))}
             </div>
           </>

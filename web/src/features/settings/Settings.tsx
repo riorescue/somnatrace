@@ -1,140 +1,270 @@
-import { useQuery } from '@tanstack/react-query'
-import { Server, Database, Cpu, Shield, CheckCircle2, Clock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { ClipboardList, Wind, CheckCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
-import { FullPageSpinner } from '@/components/LoadingSpinner'
+import type { AppSettings } from '@/types'
 
-export function Settings() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['health'],
-    queryFn: api.health,
-    refetchInterval: 30_000,
+function ComplianceSettingsCard() {
+  const queryClient = useQueryClient()
+
+  const { data: settings } = useQuery({
+    queryKey: ['app-settings'],
+    queryFn: api.appSettings.get,
   })
 
-  const { data: stats } = useQuery({
-    queryKey: ['db-stats'],
-    queryFn: api.utilities.stats,
+  const [hours, setHours] = useState('')
+  const [pct, setPct] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (settings) {
+      setHours(String(settings.compliance_hours_threshold))
+      setPct(String(settings.compliance_pct_threshold))
+    }
+  }, [settings])
+
+  const mutation = useMutation({
+    mutationFn: (body: Partial<Pick<AppSettings, 'compliance_hours_threshold' | 'compliance_pct_threshold'>>) =>
+      api.appSettings.patch(body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['app-settings'], updated)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    },
   })
 
-  if (isLoading) return <FullPageSpinner />
+  const hoursNum = parseFloat(hours)
+  const pctNum   = parseFloat(pct)
+  const hoursValid = !isNaN(hoursNum) && hoursNum >= 0.5 && hoursNum <= 12
+  const pctValid   = !isNaN(pctNum)   && pctNum   >= 0   && pctNum   <= 100
+
+  const isDirty = settings
+    ? hoursNum !== settings.compliance_hours_threshold || pctNum !== settings.compliance_pct_threshold
+    : false
+
+  const handleSave = () => {
+    if (!hoursValid || !pctValid) return
+    mutation.mutate({
+      compliance_hours_threshold: hoursNum,
+      compliance_pct_threshold: pctNum,
+    })
+  }
 
   return (
-    <div>
-      <PageHeader
-        title="Settings"
-        description="Application information and development status"
-      />
+    <div className="card p-5">
+      <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+        <ClipboardList className="w-4 h-4 text-brand-500" />
+        Compliance Reporting
+      </h2>
+      <p className="text-xs text-slate-400 mb-4">
+        Thresholds used in the Compliance &amp; Usage report. Changes apply immediately on next report load.
+      </p>
 
-      <div className="space-y-6 max-w-2xl">
-        {/* App info */}
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <Server className="w-4 h-4 text-brand-500" />
-            Application
-          </h2>
-          <dl className="space-y-3">
-            {[
-              ['Version',    data?.version  ?? '—'],
-              ['Mode',       data?.mode     ?? '—'],
-              ['Runtime',    data?.go_version ?? '—'],
-              ['Uptime',     data?.uptime   ?? '—'],
-              ['Status',     data?.status   ?? '—'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between">
-                <dt className="text-sm text-slate-500">{k}</dt>
-                <dd className="text-sm font-mono text-slate-800 bg-slate-50 px-2 py-0.5 rounded">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-
-        {/* Storage */}
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <Database className="w-4 h-4 text-brand-500" />
-            Storage
-          </h2>
-          <dl className="space-y-3">
-            {[
-              ['Driver',         'SQLite (WAL mode, pure-Go)'],
-              ['Schema version', '007_session_findings'],
-              ['Sessions',       stats ? String(stats.counts.sessions) : '—'],
-              ['Signal records', stats ? String(stats.counts.session_signals) : '—'],
-              ['Database size',  stats ? fmtBytes(stats.size_bytes) : '—'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between">
-                <dt className="text-sm text-slate-500">{k}</dt>
-                <dd className="text-sm font-mono text-slate-800 bg-slate-50 px-2 py-0.5 rounded">{v}</dd>
-              </div>
-            ))}
-            <div className="pt-1">
-              <dt className="text-sm text-slate-500 mb-1.5">Database path</dt>
-              <dd className="text-xs font-mono text-slate-800 bg-slate-50 border border-slate-200 px-3 py-2 rounded break-all select-all">
-                {data?.db_path ?? '—'}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        {/* Supported devices */}
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-brand-500" />
-            Supported Devices
-          </h2>
-          <div className="rounded-lg border border-slate-200 divide-y divide-slate-100">
-            {[
-              { name: 'ResMed AirSense 11', note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-              { name: 'ResMed AirSense 10', note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-              { name: 'ResMed AirCurve 11', note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-              { name: 'ResMed AirCurve 10', note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-            ].map(({ name, note }) => (
-              <div key={name} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="text-sm text-slate-700">{name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{note}</p>
-                </div>
-                <span className="ml-4 shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3" /> Working
-                </span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between px-4 py-3">
-              <p className="text-sm text-slate-400">Philips DreamStation series</p>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
-                <Clock className="w-3 h-3" /> Planned
-              </span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-3">
-              <p className="text-sm text-slate-400">Other EDF-compatible devices</p>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
-                <Clock className="w-3 h-3" /> Planned
-              </span>
-            </div>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">
+            Minimum hours per night
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0.5}
+              max={12}
+              step={0.5}
+              value={hours}
+              onChange={e => setHours(e.target.value)}
+              className={`w-24 text-sm font-mono px-3 py-1.5 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 ${
+                hoursValid ? 'border-slate-300' : 'border-red-400'
+              }`}
+            />
+            <span className="text-sm text-slate-400">hours (default: 4.0)</span>
           </div>
+          <p className="text-xs text-slate-400 mt-1">
+            A night counts as "compliant" when therapy is used for at least this many hours.
+          </p>
         </div>
 
-        {/* Privacy */}
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-brand-500" />
-            Privacy
-          </h2>
-          <p className="text-sm text-slate-600">
-            SomnaTrace is <strong>local-first</strong>. All data stays on your machine —
-            no telemetry, no cloud sync, no accounts required.
-            Signal and settings data are stored in a local SQLite database and never leave your device.
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">
+            Compliance threshold
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={pct}
+              onChange={e => setPct(e.target.value)}
+              className={`w-24 text-sm font-mono px-3 py-1.5 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 ${
+                pctValid ? 'border-slate-300' : 'border-red-400'
+              }`}
+            />
+            <span className="text-sm text-slate-400">% of nights (default: 70%)</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            The percentage of nights that must meet the hours threshold to be considered compliant.
+            CMS standard is 70% of nights in the first 90 days.
           </p>
-          <p className="text-xs text-slate-400 mt-2">
-            Source code: <span className="font-mono">github.com/somnatrace/somnatrace</span>
-          </p>
+        </div>
+
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            onClick={handleSave}
+            disabled={!isDirty || !hoursValid || !pctValid || mutation.isPending}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {mutation.isPending ? 'Saving…' : 'Save'}
+          </button>
+          {saved && (
+            <span className="flex items-center gap-1 text-xs text-emerald-600">
+              <CheckCircle className="w-3.5 h-3.5" /> Saved
+            </span>
+          )}
+          {mutation.isError && (
+            <span className="text-xs text-red-600">Failed to save — try again.</span>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function fmtBytes(n: number): string {
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / 1024 / 1024).toFixed(2)} MB`
+function LeakThresholdsCard() {
+  const queryClient = useQueryClient()
+
+  const { data: settings } = useQuery({
+    queryKey: ['app-settings'],
+    queryFn: api.appSettings.get,
+  })
+
+  const [warn, setWarn] = useState('')
+  const [alert, setAlert] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (settings) {
+      setWarn(String(settings.leak_warn_p95))
+      setAlert(String(settings.leak_alert_p95))
+    }
+  }, [settings])
+
+  const mutation = useMutation({
+    mutationFn: (body: Partial<Pick<AppSettings, 'leak_warn_p95' | 'leak_alert_p95'>>) =>
+      api.appSettings.patch(body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['app-settings'], updated)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    },
+  })
+
+  const warnNum  = parseFloat(warn)
+  const alertNum = parseFloat(alert)
+  const warnValid  = !isNaN(warnNum)  && warnNum  >= 1 && warnNum  <= 200
+  const alertValid = !isNaN(alertNum) && alertNum >= 1 && alertNum <= 200 && alertNum > warnNum
+
+  const isDirty = settings
+    ? warnNum !== settings.leak_warn_p95 || alertNum !== settings.leak_alert_p95
+    : false
+
+  const handleSave = () => {
+    if (!warnValid || !alertValid) return
+    mutation.mutate({ leak_warn_p95: warnNum, leak_alert_p95: alertNum })
+  }
+
+  return (
+    <div className="card p-5">
+      <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+        <Wind className="w-4 h-4 text-brand-500" />
+        Leak Rate Thresholds
+      </h2>
+      <p className="text-xs text-slate-400 mb-4">
+        P95 unintentional leak thresholds used in the Mask &amp; Device Performance report.
+        Changes apply immediately on next report load.
+      </p>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">
+            Elevated leak threshold (P95)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={200}
+              step={1}
+              value={warn}
+              onChange={e => setWarn(e.target.value)}
+              className={`w-24 text-sm font-mono px-3 py-1.5 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 ${
+                warnValid ? 'border-slate-300' : 'border-red-400'
+              }`}
+            />
+            <span className="text-sm text-slate-400">L/min (default: 24)</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Nights at or above this value are flagged as elevated leak.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">
+            Severe leak threshold (P95)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={200}
+              step={1}
+              value={alert}
+              onChange={e => setAlert(e.target.value)}
+              className={`w-24 text-sm font-mono px-3 py-1.5 rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 ${
+                alertValid ? 'border-slate-300' : 'border-red-400'
+              }`}
+            />
+            <span className="text-sm text-slate-400">L/min (default: 40)</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Nights at or above this value are flagged as severe leak. Must be greater than the elevated threshold.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            onClick={handleSave}
+            disabled={!isDirty || !warnValid || !alertValid || mutation.isPending}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {mutation.isPending ? 'Saving…' : 'Save'}
+          </button>
+          {saved && (
+            <span className="flex items-center gap-1 text-xs text-emerald-600">
+              <CheckCircle className="w-3.5 h-3.5" /> Saved
+            </span>
+          )}
+          {mutation.isError && (
+            <span className="text-xs text-red-600">Failed to save — try again.</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function Settings() {
+  return (
+    <div>
+      <PageHeader
+        title="Settings"
+        description="Configure application behavior"
+      />
+      <div className="space-y-6 max-w-2xl">
+        <ComplianceSettingsCard />
+        <LeakThresholdsCard />
+      </div>
+    </div>
+  )
 }
