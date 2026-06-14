@@ -44,7 +44,7 @@ export function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? 'bg-brand-600 text-white'
+                  ? 'bg-brand-700 text-white'
                   : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
               }`
             }

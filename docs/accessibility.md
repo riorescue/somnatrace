@@ -83,6 +83,7 @@ Do not use `text-slate-400` (#94a3b8) for readable text content on white or ligh
 `text-slate-400` is acceptable only for:
 - Interactive elements whose color transitions on hover/focus (e.g., `text-slate-400 hover:text-brand-500`)
 - Secondary/muted text on the dark sidebar background (`bg-slate-900`) — `text-slate-400` (#94a3b8) on `#0f172a` is ~7.0:1 and passes. Do not use `text-slate-500` on dark backgrounds; it only reaches ~3.75:1 there.
+- The active nav link uses `bg-brand-700` (#0369a1), not `bg-brand-600` (#0284c7). White on `brand-600` is only 4.10:1 (fails); white on `brand-700` is 5.93:1 (passes).
 
 When adding new secondary or supporting text, use `text-slate-500` as the floor.
 
