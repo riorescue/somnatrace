@@ -434,7 +434,7 @@ export function Insights() {
         <div className="card p-16 text-center mt-4">
           <TrendingUp className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500 font-medium">No data for this period</p>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-500 text-sm mt-1">
             Import sessions or generate seed data to see insights.
           </p>
         </div>
@@ -487,7 +487,11 @@ export function Insights() {
             {ahiChartData.length < 2 ? (
               <EmptyChart />
             ) : (
-              <ResponsiveContainer width="100%" height={200}>
+              <figure>
+                <figcaption className="sr-only">
+                  Line chart: nightly AHI trend. Shaded zones indicate severity bands (normal below 5, mild 5–15, moderate 15–30, severe above 30). Data also available in the Sessions table.
+                </figcaption>
+              <ResponsiveContainer aria-hidden="true" width="100%" height={200}>
                 <ComposedChart
                   data={ahiChartData}
                   margin={{ top: 4, right: 4, bottom: 0, left: -8 }}
@@ -520,6 +524,7 @@ export function Insights() {
                   />
                 </ComposedChart>
               </ResponsiveContainer>
+              </figure>
             )}
           </div>
 
@@ -535,7 +540,11 @@ export function Insights() {
               {usageChartData.every(d => !d.hasSession) ? (
                 <EmptyChart />
               ) : (
-                <ResponsiveContainer width="100%" height={180}>
+                <figure>
+                  <figcaption className="sr-only">
+                    Bar chart: nightly CPAP usage in hours. Green bars meet the 4-hour target, amber bars are below target. Data also available in the Sessions table.
+                  </figcaption>
+                <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
                   <BarChart data={usageChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" interval={nTicks(usageChartData.length)} />
@@ -553,6 +562,7 @@ export function Insights() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+                </figure>
               )}
             </div>
 
@@ -566,7 +576,11 @@ export function Insights() {
               {pressureChartData.length < 2 ? (
                 <EmptyChart />
               ) : (
-                <ResponsiveContainer width="100%" height={180}>
+                <figure>
+                  <figcaption className="sr-only">
+                    Area chart: nightly therapy pressure in cmH₂O, showing P50 (median) and P95 values per night.
+                  </figcaption>
+                <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
                   <AreaChart data={pressureChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" interval={nTicks(pressureChartData.length)} />
@@ -592,6 +606,7 @@ export function Insights() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+                </figure>
               )}
             </div>
           </div>
@@ -606,12 +621,16 @@ export function Insights() {
                 <span className="text-xs font-normal text-slate-400 ml-1">{stats?.totalEvents ?? 0} total events</span>
               </h2>
               {eventPieData.length === 0 ? (
-                <div className="h-44 flex items-center justify-center text-slate-400 text-sm">
+                <div className="h-44 flex items-center justify-center text-slate-500 text-sm">
                   No events recorded.
                 </div>
               ) : (
                 <div className="flex items-center gap-6">
-                  <ResponsiveContainer width={160} height={160}>
+                  <figure className="shrink-0">
+                    <figcaption className="sr-only">
+                      Donut chart: event type breakdown by count. Totals also listed in the legend to the right.
+                    </figcaption>
+                  <ResponsiveContainer aria-hidden="true" width={160} height={160}>
                     <PieChart style={{ cursor: 'pointer' }}>
                       <Pie
                         data={eventPieData} dataKey="value"
@@ -630,6 +649,7 @@ export function Insights() {
                       />
                     </PieChart>
                   </ResponsiveContainer>
+                  </figure>
                   <div className="flex-1 space-y-1">
                     {eventPieData.map(e => {
                       const pct = stats?.totalEvents
@@ -647,7 +667,7 @@ export function Insights() {
                           />
                           <span className="text-xs text-slate-600 flex-1 group-hover:text-slate-900">{e.name}</span>
                           <span className="text-xs font-mono text-slate-500">{e.value}</span>
-                          <span className="text-xs text-slate-400 w-8 text-right">{pct}%</span>
+                          <span className="text-xs text-slate-500 w-8 text-right">{pct}%</span>
                         </button>
                       )
                     })}
@@ -708,7 +728,7 @@ export function Insights() {
 
 function EmptyChart() {
   return (
-    <div className="h-44 flex items-center justify-center text-slate-400 text-sm">
+    <div className="h-44 flex items-center justify-center text-slate-500 text-sm">
       Not enough data for this period.
     </div>
   )
@@ -730,7 +750,7 @@ function HighlightCard({ icon, label, value, unit, bg }: HighlightCardProps) {
         <span className="text-xs font-medium text-slate-500">{label}</span>
       </div>
       <p className="text-2xl font-bold text-slate-800 leading-none">{value}</p>
-      {unit && <p className="text-xs text-slate-400 mt-1">{unit}</p>}
+      {unit && <p className="text-xs text-slate-500 mt-1">{unit}</p>}
     </div>
   )
 }

@@ -253,7 +253,7 @@ export function ComplianceReport() {
       <div className="card p-16 text-center">
         <Moon className="w-10 h-10 text-slate-300 mx-auto mb-3" />
         <p className="text-slate-500 font-medium">No session data available</p>
-        <p className="text-slate-400 text-sm mt-1">Import sessions to generate compliance reports.</p>
+        <p className="text-slate-500 text-sm mt-1">Import sessions to generate compliance reports.</p>
       </div>
     )
   }
@@ -344,13 +344,13 @@ export function ComplianceReport() {
             <WindowRow
               label="Days counted"
               w7={stats7.effectiveDays < stats7.total
-                ? <span className="text-sky-600">{stats7.effectiveDays} <span className="text-slate-400 text-xs">(of {stats7.total})</span></span>
+                ? <span className="text-sky-600">{stats7.effectiveDays} <span className="text-slate-500 text-xs">(of {stats7.total})</span></span>
                 : stats7.total}
               w30={stats30.effectiveDays < stats30.total
-                ? <span className="text-sky-600">{stats30.effectiveDays} <span className="text-slate-400 text-xs">(of {stats30.total})</span></span>
+                ? <span className="text-sky-600">{stats30.effectiveDays} <span className="text-slate-500 text-xs">(of {stats30.total})</span></span>
                 : stats30.total}
               w90={stats90.effectiveDays < stats90.total
-                ? <span className="text-sky-600">{stats90.effectiveDays} <span className="text-slate-400 text-xs">(of {stats90.total})</span></span>
+                ? <span className="text-sky-600">{stats90.effectiveDays} <span className="text-slate-500 text-xs">(of {stats90.total})</span></span>
                 : stats90.total}
             />
             <WindowRow
@@ -394,7 +394,11 @@ export function ComplianceReport() {
           Nightly Usage — Last 90 Days
           <span className="text-xs font-normal text-slate-400 ml-1">hours per night</span>
         </h2>
-        <ResponsiveContainer width="100%" height={200}>
+        <figure>
+          <figcaption className="sr-only">
+            Bar chart: nightly CPAP usage in hours over the last 90 days. Green bars meet the usage target, amber bars are below target, red bars are non-compliant. Numeric data available in the compliance table above.
+          </figcaption>
+        <ResponsiveContainer aria-hidden="true" width="100%" height={200}>
           <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={tickInterval} />
@@ -415,6 +419,7 @@ export function ComplianceReport() {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        </figure>
 
         {/* Legend */}
         <div className="flex items-center gap-4 mt-3 flex-wrap">
@@ -461,13 +466,13 @@ export function ComplianceReport() {
                       {s} {s === 1 ? 'night' : 'nights'}
                     </div>
                   </div>
-                  <span className="text-xs text-slate-400 shrink-0 w-12">
+                  <span className="text-xs text-slate-500 shrink-0 w-12">
                     {i === 0 ? 'longest' : ''}
                   </span>
                 </div>
               ))}
               {streaks.length > 8 && (
-                <p className="text-xs text-slate-400">+{streaks.length - 8} more streaks</p>
+                <p className="text-xs text-slate-500">+{streaks.length - 8} more streaks</p>
               )}
             </div>
           )}
@@ -510,7 +515,7 @@ export function ComplianceReport() {
       </div>
 
       {/* ── Print footer note ──────────────────────────────────────────────── */}
-      <div className="hidden print:block mt-8 pt-4 border-t border-slate-200 text-xs text-slate-400 text-center">
+      <div className="hidden print:block mt-8 pt-4 border-t border-slate-200 text-xs text-slate-500 text-center">
         Compliance target: ≥ {fmt(pctThreshold, 0)}% of nights with ≥ {hoursThreshold}h of CPAP/APAP usage.
         {anyNewUser && ` Calculated from first session date (${firstSessionDate}) — pre-therapy days excluded.`}
         {' '}This report is for informational purposes and does not constitute medical advice.

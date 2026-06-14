@@ -14,8 +14,16 @@ import { About } from '@/features/about/About'
 export function App() {
   return (
     <div id="app-layout" className="flex h-screen overflow-hidden">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4
+                   focus:px-4 focus:py-2 focus:bg-white focus:text-slate-900 focus:rounded-lg
+                   focus:shadow-lg text-sm font-medium"
+      >
+        Skip to main content
+      </a>
       <Sidebar />
-      <main className="flex-1 ml-60 overflow-y-auto">
+      <main id="main-content" className="flex-1 ml-60 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <Routes>
             <Route path="/"                element={<Dashboard />} />

@@ -174,7 +174,7 @@ export function DeviceReport() {
       <div className="card p-16 text-center">
         <Wind className="w-10 h-10 text-slate-300 mx-auto mb-3" />
         <p className="text-slate-500 font-medium">No session data available</p>
-        <p className="text-slate-400 text-sm mt-1">Import sessions to generate device reports.</p>
+        <p className="text-slate-500 text-sm mt-1">Import sessions to generate device reports.</p>
       </div>
     )
   }
@@ -201,10 +201,10 @@ export function DeviceReport() {
             <p className="text-3xl font-bold text-slate-900 mb-1">
               {stats.count ? fmt(stats.avgP95) : '—'}
             </p>
-            <p className="text-xs text-slate-400 mb-2">L/min</p>
+            <p className="text-xs text-slate-500 mb-2">L/min</p>
             {stats.count ? <LeakBadge status={stats.status!} /> : null}
             {stats.count > 0 && (
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-slate-500 mt-2">
                 Median avg: {fmt(stats.avgMedian)} · High-leak nights: {stats.highLeakNights}
               </p>
             )}
@@ -238,9 +238,13 @@ export function DeviceReport() {
           <span className="text-xs font-normal text-slate-400 ml-1">L/min · median and P95 per night</span>
         </h2>
         {leakChartData.length < 2 ? (
-          <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Not enough data.</div>
+          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">Not enough data.</div>
         ) : (
-          <ResponsiveContainer width="100%" height={210}>
+          <figure>
+            <figcaption className="sr-only">
+              Area chart: nightly mask leak rate trend in L/min, showing median and P95 values per night. Reference lines indicate warning and alert thresholds.
+            </figcaption>
+          <ResponsiveContainer aria-hidden="true" width="100%" height={210}>
             <AreaChart data={leakChartData} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={leakTickInterval} />
@@ -262,6 +266,7 @@ export function DeviceReport() {
               <Area type="monotone" dataKey="median" stroke="#0ea5e9" fill="#bae6fd" strokeWidth={2}   dot={false} fillOpacity={0.35} />
             </AreaChart>
           </ResponsiveContainer>
+          </figure>
         )}
       </div>
 
@@ -276,9 +281,13 @@ export function DeviceReport() {
             <span className="text-xs font-normal text-slate-400 ml-1">cmH₂O</span>
           </h2>
           {pressureChartData.length < 2 ? (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Not enough data.</div>
+            <div className="h-48 flex items-center justify-center text-slate-500 text-sm">Not enough data.</div>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
+            <figure>
+              <figcaption className="sr-only">
+                Combined chart: nightly therapy pressure delivery in cmH₂O, showing P50, P95, and max values per night.
+              </figcaption>
+            <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
               <ComposedChart data={pressureChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={Math.max(0, Math.ceil(pressureChartData.length / 8) - 1)} />
@@ -299,6 +308,7 @@ export function DeviceReport() {
                 <Line type="monotone" dataKey="p50" stroke="#6366f1" strokeWidth={2}   dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
+            </figure>
           )}
         </div>
 
@@ -343,7 +353,7 @@ export function DeviceReport() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
           <h2 className="text-sm font-semibold text-slate-700">Nightly Device Summary</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Most recent 30 sessions</p>
+          <p className="text-xs text-slate-500 mt-0.5">Most recent 30 sessions</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -383,7 +393,7 @@ export function DeviceReport() {
         </div>
       </div>
 
-      <div className="hidden print:block mt-8 pt-4 border-t border-slate-200 text-xs text-slate-400 text-center">
+      <div className="hidden print:block mt-8 pt-4 border-t border-slate-200 text-xs text-slate-500 text-center">
         Leak thresholds (P95 unintentional leak): &lt; {warnP95} L/min = good seal,{' '}
         {warnP95}–{alertP95} = elevated, &gt; {alertP95} = severe.
         This report is for informational purposes and does not constitute medical advice.

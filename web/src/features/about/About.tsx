@@ -92,7 +92,7 @@ export function About() {
               <div key={name} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <p className="text-sm text-slate-700">{name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{note}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{note}</p>
                 </div>
                 <span className="ml-4 shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                   <CheckCircle2 className="w-3 h-3" /> Working
@@ -100,13 +100,13 @@ export function About() {
               </div>
             ))}
             <div className="flex items-center justify-between px-4 py-3">
-              <p className="text-sm text-slate-400">Philips DreamStation series</p>
+              <p className="text-sm text-slate-500">Philips DreamStation series</p>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
                 <Clock className="w-3 h-3" /> Planned
               </span>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
-              <p className="text-sm text-slate-400">Other EDF-compatible devices</p>
+              <p className="text-sm text-slate-500">Other EDF-compatible devices</p>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
                 <Clock className="w-3 h-3" /> Planned
               </span>
@@ -125,7 +125,7 @@ export function About() {
             no telemetry, no cloud sync, no accounts required.
             Signal and settings data are stored in a local SQLite database and never leave your device.
           </p>
-          <p className="text-xs text-slate-400 mt-2">
+          <p className="text-xs text-slate-500 mt-2">
             Source code: <span className="font-mono">github.com/somnatrace/somnatrace</span>
           </p>
         </div>

@@ -70,7 +70,7 @@ export function ImportsList() {
         description="Manage your SD card data imports"
         action={
           <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
-            <Upload className="w-4 h-4" />
+            <Upload className="w-4 h-4" aria-hidden="true" />
             New Import
           </button>
         }
@@ -80,7 +80,7 @@ export function ImportsList() {
       <div className="card p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <MemoryStick className="w-4 h-4 text-brand-500" />
+            <MemoryStick className="w-4 h-4 text-brand-500" aria-hidden="true" />
             Detected SD Cards
           </h3>
           <button
@@ -89,14 +89,14 @@ export function ImportsList() {
             disabled={detecting}
           >
             {detecting
-              ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              : <ScanSearch className="w-3.5 h-3.5" />}
+              ? <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+              : <ScanSearch className="w-3.5 h-3.5" aria-hidden="true" />}
             {detecting ? 'Scanning…' : 'Scan'}
           </button>
         </div>
 
         {cards.length === 0 ? (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             No ResMed SD cards detected. Insert your SD card and click <strong>Scan</strong>, or enter the path manually below.
           </p>
         ) : (
@@ -108,7 +108,7 @@ export function ImportsList() {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50
                            hover:border-emerald-400 hover:bg-emerald-100 transition-colors text-left"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">
                     {card.path.split('/').pop() ?? card.path}
@@ -129,28 +129,33 @@ export function ImportsList() {
       {showForm && (
         <div className="card p-5 mb-6">
           <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <FolderOpen className="w-4 h-4 text-brand-500" />
+            <FolderOpen className="w-4 h-4 text-brand-500" aria-hidden="true" />
             Import from local path
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Source path <span className="text-red-500">*</span>
+              <label htmlFor="import-source-path" className="block text-xs font-medium text-slate-600 mb-1">
+                Source path{' '}
+                <span aria-hidden="true" className="text-red-500">*</span>
+                <span className="sr-only">(required)</span>
               </label>
               <input
+                id="import-source-path"
                 type="text"
                 value={sourcePath}
                 onChange={e => setSourcePath(e.target.value)}
                 placeholder="/Volumes/SD_CARD or /path/to/mirror"
+                aria-required="true"
                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none
                            focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Display name <span className="text-slate-400">(optional)</span>
+              <label htmlFor="import-display-name" className="block text-xs font-medium text-slate-600 mb-1">
+                Display name <span className="text-slate-500">(optional)</span>
               </label>
               <input
+                id="import-display-name"
                 type="text"
                 value={sourceName}
                 onChange={e => setSourceName(e.target.value)}
@@ -159,7 +164,7 @@ export function ImportsList() {
                            focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
             </div>
-            {formError && <p className="text-xs text-red-600">{formError}</p>}
+            {formError && <p role="alert" className="text-xs text-red-600">{formError}</p>}
             <div className="flex items-center gap-3">
               <button
                 type="submit"
@@ -167,8 +172,8 @@ export function ImportsList() {
                 disabled={createMut.isPending}
               >
                 {createMut.isPending
-                  ? <><RefreshCw className="w-4 h-4 animate-spin" /> Starting…</>
-                  : <><Upload className="w-4 h-4" /> Start Import</>}
+                  ? <><RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" /> Starting…</>
+                  : <><Upload className="w-4 h-4" aria-hidden="true" /> Start Import</>}
               </button>
               <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>
                 Cancel
@@ -181,22 +186,22 @@ export function ImportsList() {
       {/* Import list */}
       {imports.length === 0 ? (
         <div className="card p-12 text-center">
-          <Upload className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <Upload className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
           <p className="text-slate-500 text-sm">No imports yet.</p>
-          <p className="text-slate-400 text-xs mt-1">
+          <p className="text-slate-500 text-xs mt-1">
             Click <strong>New Import</strong> to bring in your first SD card export.
           </p>
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Imports">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Source</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Sessions</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Started</th>
-                <th className="px-5 py-3" />
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Source</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Sessions</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Started</th>
+                <th scope="col" className="px-5 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -204,7 +209,7 @@ export function ImportsList() {
                 <tr key={imp.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-5 py-3">
                     <p className="font-medium text-slate-800">{imp.source_name}</p>
-                    <p className="text-xs text-slate-400 font-mono mt-0.5 truncate max-w-xs">{imp.source_path}</p>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5 truncate max-w-xs">{imp.source_path}</p>
                   </td>
                   <td className="px-5 py-3">
                     <ImportStatusBadge status={imp.status} />
@@ -220,7 +225,7 @@ export function ImportsList() {
                         className="btn-primary text-xs py-1.5 px-3"
                         onClick={() => setReviewImportId(imp.id)}
                       >
-                        <ClipboardList className="w-3.5 h-3.5" />
+                        <ClipboardList className="w-3.5 h-3.5" aria-hidden="true" />
                         Review Sessions
                       </button>
                     )}

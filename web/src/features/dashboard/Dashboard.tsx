@@ -50,7 +50,7 @@ export function Dashboard() {
     ? formatDuration(rows.reduce((a, r) => a + r.usage_minutes, 0) / rows.length)
     : '—'
   const latestAHI = latestSession ? formatAHI(latestSession.ahi) : '—'
-  const { color } = latestSession ? ahiLabel(latestSession.ahi) : { color: 'text-slate-900' }
+  const { label: ahiSeverity, color } = latestSession ? ahiLabel(latestSession.ahi) : { label: '', color: 'text-slate-900' }
 
   return (
     <div>
@@ -61,7 +61,7 @@ export function Dashboard() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Last Night AHI" value={latestAHI} sub="events / hour" accent={color} />
+        <StatCard label="Last Night AHI" value={latestAHI} sub={ahiSeverity ? `events / hour · ${ahiSeverity}` : 'events / hour'} accent={color} />
         <StatCard label="7-Day Avg AHI" value={avgAHI} sub="events / hour" />
         <StatCard label="Avg Usage" value={avgUsage} sub="per night" />
         <StatCard label="Total Sessions" value={sessions.data?.sessions?.length ?? 0} sub="all time" />
@@ -70,15 +70,19 @@ export function Dashboard() {
       {/* AHI trend chart */}
       <div className="card p-5 mb-6">
         <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-          <Activity className="w-4 h-4 text-brand-500" />
+          <Activity className="w-4 h-4 text-brand-500" aria-hidden="true" />
           AHI — Last 14 Nights
         </h2>
         {chartData.length === 0 ? (
-          <div className="h-40 flex items-center justify-center text-slate-400 text-sm">
+          <div className="h-40 flex items-center justify-center text-slate-500 text-sm">
             No data yet — import your first session to see trends.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={180}>
+          <figure>
+            <figcaption className="sr-only">
+              Line chart: AHI events per hour over the last 14 nights. Data also available in the Sessions table.
+            </figcaption>
+          <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
             <LineChart
               data={chartData}
               style={{ cursor: 'pointer' }}
@@ -101,6 +105,7 @@ export function Dashboard() {
               />
             </LineChart>
           </ResponsiveContainer>
+          </figure>
         )}
       </div>
 
@@ -109,20 +114,20 @@ export function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Upload className="w-4 h-4 text-brand-500" /> Recent Imports
+              <Upload className="w-4 h-4 text-brand-500" aria-hidden="true" /> Recent Imports
             </h2>
             <Link to="/imports" className="text-xs text-brand-600 hover:underline flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
+              View all <ArrowRight className="w-3 h-3" aria-hidden="true" />
             </Link>
           </div>
           <ul className="divide-y divide-slate-100">
             {recentImports.length === 0 ? (
-              <li className="px-5 py-4 text-sm text-slate-400">No imports yet.</li>
+              <li className="px-5 py-4 text-sm text-slate-500">No imports yet.</li>
             ) : recentImports.map(imp => (
               <li key={imp.id} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-800">{imp.source_name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{formatDate(imp.created_at)}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{formatDate(imp.created_at)}</p>
                 </div>
                 <ImportStatusBadge status={imp.status} />
               </li>
@@ -134,15 +139,15 @@ export function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Moon className="w-4 h-4 text-brand-500" /> Recent Sessions
+              <Moon className="w-4 h-4 text-brand-500" aria-hidden="true" /> Recent Sessions
             </h2>
             <Link to="/sessions" className="text-xs text-brand-600 hover:underline flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
+              View all <ArrowRight className="w-3 h-3" aria-hidden="true" />
             </Link>
           </div>
           <ul className="divide-y divide-slate-100">
             {recentSessions.length === 0 ? (
-              <li className="px-5 py-4 text-sm text-slate-400">No sessions yet.</li>
+              <li className="px-5 py-4 text-sm text-slate-500">No sessions yet.</li>
             ) : recentSessions.map(sess => {
               const { label, color } = ahiLabel(sess.ahi)
               return (
@@ -152,13 +157,13 @@ export function Dashboard() {
                       <p className="text-sm font-medium text-slate-800 group-hover:text-brand-600 transition-colors">
                         {formatDate(sess.start_time)}
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         {formatDuration(sess.duration_minutes)} · AHI{' '}
                         <span className={color}>{formatAHI(sess.ahi)}</span>
                         {' '}({label})
                       </p>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-brand-500 transition-colors" />
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-brand-500 transition-colors" aria-hidden="true" />
                   </Link>
                 </li>
               )

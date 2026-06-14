@@ -34,7 +34,7 @@ function ConfirmDialog({ title, body, confirmLabel, onConfirm, onCancel, danger 
         <div className="px-5 pt-5 pb-4">
           <div className="flex items-start gap-3">
             <div className={`mt-0.5 p-2 rounded-full ${danger ? 'bg-red-50' : 'bg-amber-50'}`}>
-              <AlertTriangle className={`w-4 h-4 ${danger ? 'text-red-500' : 'text-amber-500'}`} />
+              <AlertTriangle className={`w-4 h-4 ${danger ? 'text-red-500' : 'text-amber-500'}`} aria-hidden="true" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-800 mb-1">{title}</h3>
@@ -68,8 +68,8 @@ function Toast({ message, ok }: { message: string; ok: boolean }) {
       ok ? 'bg-emerald-500' : 'bg-red-500'
     }`}>
       {ok
-        ? <CheckCircle2 className="w-4 h-4" />
-        : <AlertTriangle className="w-4 h-4" />}
+        ? <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+        : <AlertTriangle className="w-4 h-4" aria-hidden="true" />}
       {message}
     </div>
   )
@@ -80,7 +80,7 @@ function Toast({ message, ok }: { message: string; ok: boolean }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">{title}</h2>
+      <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">{title}</h2>
       <div className="card divide-y divide-slate-100">{children}</div>
     </section>
   )
@@ -96,10 +96,10 @@ interface RowProps {
 function Row({ icon, label, description, action }: RowProps) {
   return (
     <div className="flex items-center gap-4 px-5 py-4">
-      <div className="text-slate-400">{icon}</div>
+      <div className="text-slate-400" aria-hidden="true">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-slate-800">{label}</p>
-        <p className="text-xs text-slate-400 mt-0.5">{description}</p>
+        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
       </div>
       <div className="shrink-0">{action}</div>
     </div>
@@ -174,10 +174,10 @@ interface BackupRowProps {
 function BackupItem({ backup, onRestore, onDelete, isRestoring, isDeleting }: BackupRowProps) {
   return (
     <div className="flex items-center gap-3 px-5 py-3 bg-slate-50 rounded-xl">
-      <HardDrive className="w-4 h-4 text-slate-400 shrink-0" />
+      <HardDrive className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-slate-700 truncate">{fmtBackupDate(backup.created_at)}</p>
-        <p className="text-xs text-slate-400">{fmtBytes(backup.size_bytes)}</p>
+        <p className="text-xs text-slate-500">{fmtBytes(backup.size_bytes)}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <button
@@ -185,15 +185,16 @@ function BackupItem({ backup, onRestore, onDelete, isRestoring, isDeleting }: Ba
           disabled={isRestoring || isDeleting}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-brand-600 border border-brand-200 hover:bg-brand-50 transition-colors disabled:opacity-40"
         >
-          {isRestoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArchiveRestore className="w-3 h-3" />}
+          {isRestoring ? <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" /> : <ArchiveRestore className="w-3 h-3" aria-hidden="true" />}
           Restore
         </button>
         <button
           onClick={onDelete}
           disabled={isRestoring || isDeleting}
+          aria-label="Delete backup"
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors disabled:opacity-40"
         >
-          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" /> : <Trash2 className="w-3 h-3" aria-hidden="true" />}
         </button>
       </div>
     </div>
@@ -325,15 +326,15 @@ export function Utilities() {
               {(Object.entries(stats.counts) as [string, number][]).map(([key, val]) => (
                 <div key={key} className="bg-slate-50 rounded-xl p-3 text-center">
                   <p className="text-xl font-semibold text-slate-800">{val}</p>
-                  <p className="text-xs text-slate-400 mt-0.5 capitalize">{key.replace('_', ' ')}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 capitalize">{key.replace('_', ' ')}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-sm text-slate-400">Loading…</div>
+            <div className="text-sm text-slate-500">Loading…</div>
           )}
           {stats && (
-            <p className="text-xs text-slate-400 mt-3">
+            <p className="text-xs text-slate-500 mt-3">
               Database file size: <span className="font-medium text-slate-600">{fmtBytes(stats.size_bytes)}</span>
               {' '}(includes WAL)
             </p>
@@ -351,8 +352,8 @@ export function Utilities() {
               className="btn-ghost text-sm flex items-center gap-1.5"
             >
               {vacuumMutation.isPending
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <DatabaseZap className="w-3.5 h-3.5" />}
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                : <DatabaseZap className="w-3.5 h-3.5" aria-hidden="true" />}
               Vacuum
             </button>
           }
@@ -372,8 +373,8 @@ export function Utilities() {
               className="btn-ghost text-sm flex items-center gap-1.5"
             >
               {exporting
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <Download className="w-3.5 h-3.5" />}
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                : <Download className="w-3.5 h-3.5" aria-hidden="true" />}
               Export CSV
             </button>
           }
@@ -407,8 +408,8 @@ export function Utilities() {
               className="btn-primary text-sm flex items-center gap-1.5"
             >
               {createBackupMutation.isPending
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <HardDrive className="w-3.5 h-3.5" />}
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                : <HardDrive className="w-3.5 h-3.5" aria-hidden="true" />}
               Back Up Now
             </button>
           }
@@ -431,7 +432,7 @@ export function Utilities() {
 
         {backups.length === 0 && !createBackupMutation.isPending && (
           <div className="px-5 pb-4">
-            <p className="text-xs text-slate-400">No backups yet. Click "Back Up Now" to create your first snapshot.</p>
+            <p className="text-xs text-slate-500">No backups yet. Click "Back Up Now" to create your first snapshot.</p>
           </div>
         )}
       </Section>
@@ -449,8 +450,8 @@ export function Utilities() {
               className="btn-ghost text-sm flex items-center gap-1.5"
             >
               {detecting
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <RefreshCw className="w-3.5 h-3.5" />}
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                : <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />}
               Scan
             </button>
           }
@@ -459,12 +460,12 @@ export function Utilities() {
         {detected && (
           <div className="px-5 pb-4">
             {detected.cards.length === 0 ? (
-              <p className="text-xs text-slate-400">No ResMed SD cards found in mounted volumes.</p>
+              <p className="text-xs text-slate-500">No ResMed SD cards found in mounted volumes.</p>
             ) : (
               <ul className="space-y-2">
                 {detected.cards.map(card => (
                   <li key={card.path} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />
                     <span className="font-mono text-slate-700 text-xs">{card.path}</span>
                     <a
                       href="/imports"

@@ -173,7 +173,7 @@ function Timeline({ allEvents, visibleTypes, sessionStart, sessionEnd, onEventCl
       </div>
       <div className="relative flex justify-between mt-1 px-0.5">
         {ticks.map((frac, i) => (
-          <span key={i} className="text-[9px] text-slate-400 font-mono">
+          <span key={i} className="text-[9px] text-slate-500 font-mono">
             {fmtTick(frac)}
           </span>
         ))}
@@ -199,11 +199,11 @@ function EventRow({ event, onZoom, timeSinceLast }: { event: Event; onZoom?: () 
       <div className="flex-1 min-w-0">
         <span className={`text-xs font-semibold ${cfg.text}`}>{cfg.label}</span>
       </div>
-      <span className="text-[10px] font-mono text-slate-400 w-16 text-right shrink-0" title="Time since previous event">
+      <span className="text-[10px] font-mono text-slate-500 w-16 text-right shrink-0" title="Time since previous event">
         {timeSinceLast != null ? `+${fmtDuration(timeSinceLast)}` : ''}
       </span>
       <span className="text-xs font-mono text-slate-500 w-24 shrink-0">{fmtTime(event.start_time)}</span>
-      <span className="text-xs font-mono text-slate-400 w-12 text-right shrink-0">
+      <span className="text-xs font-mono text-slate-500 w-12 text-right shrink-0">
         {fmtDuration(event.duration_seconds)}
       </span>
       {onZoom && (
@@ -253,16 +253,17 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
   return (
     <div className="card p-5 mb-4">
       <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-        <Zap className="w-4 h-4 text-brand-500" />
+        <Zap className="w-4 h-4 text-brand-500" aria-hidden="true" />
         Events
-        <span className="text-xs font-normal text-slate-400 ml-1">device-scored annotations</span>
-        <span className="ml-auto text-xs font-normal text-slate-400 tabular-nums">{countLabel}</span>
+        <span className="text-xs font-normal text-slate-500 ml-1">device-scored annotations</span>
+        <span className="ml-auto text-xs font-normal text-slate-500 tabular-nums">{countLabel}</span>
         <button
           onClick={() => setShowInfo(true)}
           className="no-print text-slate-300 hover:text-brand-500 transition-colors p-1 rounded"
           title="About event types"
+          aria-label="About event types"
         >
-          <Info className="w-4 h-4" />
+          <Info className="w-4 h-4" aria-hidden="true" />
         </button>
       </h2>
 
@@ -277,11 +278,11 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-brand-500" />
+                <Zap className="w-4 h-4 text-brand-500" aria-hidden="true" />
                 Event Types
               </h3>
-              <button onClick={closeInfo} className="text-slate-400 hover:text-slate-600 transition-colors">
-                <X className="w-4 h-4" />
+              <button onClick={closeInfo} aria-label="Close" className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
             <div className="px-5 py-4 space-y-4">
@@ -304,7 +305,7 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
 
       {events.length === 0 ? (
         <div className="rounded-lg bg-slate-50 border border-dashed border-slate-300 p-6 text-center">
-          <p className="text-slate-400 text-xs">No events recorded for this session.</p>
+          <p className="text-slate-500 text-xs">No events recorded for this session.</p>
         </div>
       ) : (
         <>
@@ -318,10 +319,10 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
           />
           <div className="flex items-center gap-3 pb-1.5 -mx-1 px-1 border-b border-slate-100">
             <span className="w-2 h-2 shrink-0" />
-            <span className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Type</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 w-16 text-right shrink-0">Gap</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 w-24 shrink-0">Time</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 w-12 text-right shrink-0">Dur.</span>
+            <span className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Type</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-16 text-right shrink-0">Gap</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-24 shrink-0">Time</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-12 text-right shrink-0">Dur.</span>
             {onEventClick && <span className="w-3.5 shrink-0" />}
           </div>
           <div>

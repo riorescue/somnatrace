@@ -33,7 +33,7 @@ export function Reports() {
             onClick={() => window.print()}
             className="no-print flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4" aria-hidden="true" />
             Print Report
           </button>
         }

@@ -160,7 +160,7 @@ export function EffectivenessReport() {
       <div className="card p-16 text-center">
         <Activity className="w-10 h-10 text-slate-300 mx-auto mb-3" />
         <p className="text-slate-500 font-medium">No session data available</p>
-        <p className="text-slate-400 text-sm mt-1">Import sessions to generate effectiveness reports.</p>
+        <p className="text-slate-500 text-sm mt-1">Import sessions to generate effectiveness reports.</p>
       </div>
     )
   }
@@ -187,10 +187,10 @@ export function EffectivenessReport() {
             <p className="text-3xl font-bold text-slate-900 mb-1">
               {stats.count ? stats.avg.toFixed(1) : '—'}
             </p>
-            <p className="text-xs text-slate-400 mb-2">events / hour</p>
+            <p className="text-xs text-slate-500 mb-2">events / hour</p>
             {stats.count ? <AHIBadge status={stats.status!} /> : null}
             {stats.count > 0 && (
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-slate-500 mt-2">
                 Range: {stats.min.toFixed(1)} – {stats.max.toFixed(1)} · {stats.count} nights
               </p>
             )}
@@ -225,9 +225,13 @@ export function EffectivenessReport() {
           <span className="text-xs font-normal text-slate-400 ml-1">nightly AHI over last 90 days</span>
         </h2>
         {ahiChartData.length < 2 ? (
-          <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Not enough data.</div>
+          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">Not enough data.</div>
         ) : (
-          <ResponsiveContainer width="100%" height={210}>
+          <figure>
+            <figcaption className="sr-only">
+              Line chart: residual AHI trend over the last 90 days with severity zone shading. Data also available in the nightly summary table below.
+            </figcaption>
+          <ResponsiveContainer aria-hidden="true" width="100%" height={210}>
             <ComposedChart data={ahiChartData} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
               {AHI_ZONES.map((z, i) => (
                 <ReferenceArea key={i} y1={z.lo} y2={z.hi} fill={z.fill} fillOpacity={0.45} ifOverflow="hidden" />
@@ -249,6 +253,7 @@ export function EffectivenessReport() {
               />
             </ComposedChart>
           </ResponsiveContainer>
+          </figure>
         )}
       </div>
 
@@ -263,9 +268,13 @@ export function EffectivenessReport() {
             <span className="text-xs font-normal text-slate-400 ml-1">cmH₂O · P50 and P95</span>
           </h2>
           {pressureChartData.length < 2 ? (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Not enough data.</div>
+            <div className="h-48 flex items-center justify-center text-slate-500 text-sm">Not enough data.</div>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
+            <figure>
+              <figcaption className="sr-only">
+                Area chart: nightly therapy pressure trend in cmH₂O, showing P50 (median) and P95 values.
+              </figcaption>
+            <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
               <AreaChart data={pressureChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={Math.max(0, Math.ceil(pressureChartData.length / 8) - 1)} />
@@ -279,6 +288,7 @@ export function EffectivenessReport() {
                 <Area type="monotone" dataKey="p50" stroke="#6366f1" fill="#c7d2fe" strokeWidth={2}   dot={false} fillOpacity={0.35} />
               </AreaChart>
             </ResponsiveContainer>
+            </figure>
           )}
         </div>
 
@@ -290,9 +300,13 @@ export function EffectivenessReport() {
             <span className="text-xs font-normal text-slate-400 ml-1">last 90 days</span>
           </h2>
           {eventBarData.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">No events recorded.</div>
+            <div className="h-48 flex items-center justify-center text-slate-500 text-sm">No events recorded.</div>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
+            <figure>
+              <figcaption className="sr-only">
+                Horizontal bar chart: total event counts by type over the last 90 days. Numeric totals also available in the nightly summary table below.
+              </figcaption>
+            <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
               <BarChart data={eventBarData} layout="vertical" margin={{ top: 4, right: 40, bottom: 0, left: 0 }}>
                 <XAxis type="number" tick={{ fontSize: 10 }} stroke="#94a3b8" />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} stroke="#94a3b8" width={110} />
@@ -307,6 +321,7 @@ export function EffectivenessReport() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            </figure>
           )}
         </div>
       </div>
@@ -315,7 +330,7 @@ export function EffectivenessReport() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
           <h2 className="text-sm font-semibold text-slate-700">Nightly Summary</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Most recent 30 sessions</p>
+          <p className="text-xs text-slate-500 mt-0.5">Most recent 30 sessions</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -349,7 +364,7 @@ export function EffectivenessReport() {
         </div>
       </div>
 
-      <div className="hidden print:block mt-8 pt-4 border-t border-slate-200 text-xs text-slate-400 text-center">
+      <div className="hidden print:block mt-8 pt-4 border-t border-slate-200 text-xs text-slate-500 text-center">
         Therapy effectiveness benchmarks: AHI &lt; 5 = good, 5–15 = mild/watch, 15–30 = moderate/poor, ≥ 30 = severe.
         This report is for informational purposes and does not constitute medical advice.
       </div>

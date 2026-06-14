@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, CheckSquare, Square, AlertCircle, Loader2, DatabaseZap } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -12,6 +12,38 @@ interface Props {
 
 export function SessionReviewModal({ importId, onClose }: Props) {
   const qc = useQueryClient()
+  const modalRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement
+    const modal = modalRef.current
+    if (!modal) return
+
+    const focusableSelector =
+      'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+    modal.querySelectorAll<HTMLElement>(focusableSelector)[0]?.focus()
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key !== 'Tab') return
+      const els = Array.from(modal.querySelectorAll<HTMLElement>(focusableSelector))
+      const first = els[0]
+      const last = els[els.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus() }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      previousFocusRef.current?.focus()
+    }
+  }, [onClose])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['import-candidates', importId],
@@ -72,66 +104,75 @@ export function SessionReviewModal({ importId, onClose }: Props) {
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-modal-title"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Review Sessions</h2>
+            <h2 id="review-modal-title" className="text-base font-semibold text-slate-900">Review Sessions</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Select which sessions to import into the database
             </p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
           {isLoading && (
-            <div className="flex items-center justify-center py-16 gap-2 text-slate-400">
-              <Loader2 className="w-5 h-5 animate-spin" />
+            <div className="flex items-center justify-center py-16 gap-2 text-slate-500">
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
               <span className="text-sm">Loading sessions…</span>
             </div>
           )}
 
           {isError && (
-            <div className="flex items-center gap-2 m-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div role="alert" className="flex items-center gap-2 m-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
               Failed to load session candidates.
             </div>
           )}
 
           {!isLoading && !isError && sessions.length === 0 && (
-            <div className="text-center py-16 text-slate-400 text-sm">
+            <div className="text-center py-16 text-slate-500 text-sm">
               No sessions were discovered in this import.
             </div>
           )}
 
           {sessions.length > 0 && (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Session candidates">
               <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                 <tr>
-                  <th className="px-4 py-3 w-10">
+                  <th scope="col" className="px-4 py-3 w-10">
                     <button
                       onClick={toggleAllNew}
+                      role="checkbox"
+                      aria-checked={allNewSelected}
+                      aria-label={allNewSelected ? 'Deselect all new sessions' : 'Select all new sessions'}
                       className="text-slate-400 hover:text-brand-600 transition-colors"
-                      title={allNewSelected ? 'Deselect all new' : 'Select all new'}
                     >
                       {allNewSelected
-                        ? <CheckSquare className="w-4 h-4 text-brand-600" />
-                        : <Square className="w-4 h-4" />}
+                        ? <CheckSquare className="w-4 h-4 text-brand-600" aria-hidden="true" />
+                        : <Square className="w-4 h-4" aria-hidden="true" />}
                     </button>
                   </th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Night</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Duration</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">AHI</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Events</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pressure</th>
+                  <th scope="col" className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                  <th scope="col" className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Night</th>
+                  <th scope="col" className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Duration</th>
+                  <th scope="col" className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">AHI</th>
+                  <th scope="col" className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Events</th>
+                  <th scope="col" className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pressure</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -168,7 +209,7 @@ export function SessionReviewModal({ importId, onClose }: Props) {
               onClick={() => confirmMut.mutate([...selected])}
             >
               {confirmMut.isPending
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</>
+                ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Importing…</>
                 : <>Import {selected.size} session{selected.size !== 1 ? 's' : ''}</>}
             </button>
           </div>
@@ -196,26 +237,30 @@ function SessionRow({
       <td className="px-4 py-3 text-center">
         {existing ? (
           <span className="flex items-center justify-center">
-            <DatabaseZap className="w-4 h-4 text-slate-300" />
+            <DatabaseZap className="w-4 h-4 text-slate-300" aria-hidden="true" />
+            <span className="sr-only">Already in database</span>
           </span>
         ) : (
           <button
             onClick={e => { e.stopPropagation(); onToggle() }}
+            role="checkbox"
+            aria-checked={checked}
+            aria-label={`${checked ? 'Deselect' : 'Select'} session from ${formatDate(session.start_time)}`}
             className="text-slate-400 hover:text-brand-600 transition-colors"
           >
             {checked
-              ? <CheckSquare className="w-4 h-4 text-brand-600" />
-              : <Square className="w-4 h-4" />}
+              ? <CheckSquare className="w-4 h-4 text-brand-600" aria-hidden="true" />
+              : <Square className="w-4 h-4" aria-hidden="true" />}
           </button>
         )}
       </td>
-      <td className={`px-3 py-3 font-medium whitespace-nowrap ${existing ? 'text-slate-400' : 'text-slate-800'}`}>
+      <td className={`px-3 py-3 font-medium whitespace-nowrap ${existing ? 'text-slate-500' : 'text-slate-800'}`}>
         {formatDate(session.start_time)}
       </td>
       <td className={`px-3 py-3 tabular-nums whitespace-nowrap text-xs ${existing ? 'text-slate-400' : 'text-slate-500'}`}>
         {formatTime(session.start_time)} → {formatTime(session.end_time)}
       </td>
-      <td className={`px-3 py-3 tabular-nums whitespace-nowrap ${existing ? 'text-slate-400' : 'text-slate-700'}`}>
+      <td className={`px-3 py-3 tabular-nums whitespace-nowrap ${existing ? 'text-slate-500' : 'text-slate-700'}`}>
         {formatDuration(session.duration_minutes)}
       </td>
       <td className="px-3 py-3 tabular-nums whitespace-nowrap">
@@ -228,10 +273,10 @@ function SessionRow({
           </>
         )}
       </td>
-      <td className={`px-3 py-3 tabular-nums ${existing ? 'text-slate-400' : 'text-slate-600'}`}>
+      <td className={`px-3 py-3 tabular-nums ${existing ? 'text-slate-500' : 'text-slate-600'}`}>
         {session.event_count}
       </td>
-      <td className={`px-3 py-3 tabular-nums text-xs ${existing ? 'text-slate-400' : 'text-slate-600'}`}>
+      <td className={`px-3 py-3 tabular-nums text-xs ${existing ? 'text-slate-500' : 'text-slate-600'}`}>
         {existing ? (
           <span className="inline-flex items-center gap-1">
             {session.pressure_p50.toFixed(1)} cmH₂O

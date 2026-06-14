@@ -12,7 +12,7 @@ export function StatCard({ label, value, sub, accent }: Props) {
       <span className={`text-2xl font-bold tabular-nums ${accent ?? 'text-slate-900'}`}>
         {value}
       </span>
-      {sub && <span className="text-xs text-slate-400">{sub}</span>}
+      {sub && <span className="text-xs text-slate-500">{sub}</span>}
     </div>
   )
 }

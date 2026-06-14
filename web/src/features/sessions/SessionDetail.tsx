@@ -167,7 +167,7 @@ function SignalChart({
         onClick={resetZoom}
         className="no-print flex items-center gap-1 text-xs text-slate-400 hover:text-brand-500 transition-colors"
       >
-        <ZoomOut className="w-3 h-3" />
+        <ZoomOut className="w-3 h-3" aria-hidden="true" />
         Reset zoom
       </button>
     </div>
@@ -182,7 +182,7 @@ function SignalChart({
     return (
       <div style={{ userSelect: 'none', cursor: 'crosshair' }}>
         {resetBtn}
-        <ResponsiveContainer width="100%" height={height}>
+        <ResponsiveContainer aria-hidden="true" width="100%" height={height}>
           <AreaChart data={visibleData} margin={margin} syncId={chartSyncId} syncMethod="value" {...chartEvents}>
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -204,7 +204,7 @@ function SignalChart({
   return (
     <div style={{ userSelect: 'none', cursor: 'crosshair' }}>
       {resetBtn}
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer aria-hidden="true" width="100%" height={height}>
         <LineChart data={visibleData} margin={margin} syncId={chartSyncId} syncMethod="value" {...chartEvents}>
           {grid}{xAxis}{yAxis}{tip}{refs}
           <Line type="monotone" dataKey="v" stroke={color}
@@ -430,13 +430,20 @@ function FlowAudioPlayer({
           ? 'Generating audio…'
           : `Play visible window as breathing audio (~${durationLabel})`
       }
+      aria-label={
+        state === 'playing'
+          ? 'Stop breathing audio'
+          : state === 'loading'
+          ? 'Generating audio…'
+          : `Play visible window as breathing audio (~${durationLabel})`
+      }
     >
       {state === 'loading' ? (
-        <Loader2 className="w-4 h-4 animate-spin text-brand-400" />
+        <Loader2 className="w-4 h-4 animate-spin text-brand-400" aria-hidden="true" />
       ) : state === 'playing' ? (
-        <Square className="w-4 h-4 fill-current" />
+        <Square className="w-4 h-4 fill-current" aria-hidden="true" />
       ) : (
-        <Volume2 className="w-4 h-4" />
+        <Volume2 className="w-4 h-4" aria-hidden="true" />
       )}
     </button>
   )
@@ -528,7 +535,7 @@ function ChartCard({ title, subtitle, icon, info, refLegend, render, extraAction
         <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
           {icon}
           {title}
-          <span className="text-xs font-normal text-slate-400">{subtitle}</span>
+          <span className="text-xs font-normal text-slate-500">{subtitle}</span>
         </h2>
         <div className="no-print flex items-center gap-1">
           {extraActions}
@@ -536,15 +543,17 @@ function ChartCard({ title, subtitle, icon, info, refLegend, render, extraAction
             onClick={() => setMode('expand')}
             className="text-slate-300 hover:text-brand-500 transition-colors p-1 rounded"
             title="Expand chart"
+            aria-label="Expand chart"
           >
-            <Maximize2 className="w-4 h-4" />
+            <Maximize2 className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             onClick={() => setMode('info')}
             className="text-slate-300 hover:text-brand-500 transition-colors p-1 rounded"
             title={`About ${title}`}
+            aria-label={`About ${title}`}
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -586,10 +595,10 @@ function ChartCard({ title, subtitle, icon, info, refLegend, render, extraAction
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                   <span className="text-brand-500">{icon}</span>
                   {title}
-                  <span className="text-xs font-normal text-slate-400 ml-1">{subtitle}</span>
+                  <span className="text-xs font-normal text-slate-500 ml-1">{subtitle}</span>
                 </h3>
-                <button onClick={close} className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <X className="w-4 h-4" />
+                <button onClick={close} aria-label="Close" className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
               <div className="p-5">
@@ -624,8 +633,8 @@ function ChartCard({ title, subtitle, icon, info, refLegend, render, extraAction
                   <span className="text-brand-500">{icon}</span>
                   {title}
                 </h3>
-                <button onClick={close} className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <X className="w-4 h-4" />
+                <button onClick={close} aria-label="Close" className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
               <div className="px-5 py-4 space-y-3 text-sm text-slate-600">
@@ -754,7 +763,7 @@ function MachineSettingsCard({ settings }: { settings: Record<string, unknown> }
       <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
         <SlidersHorizontal className="w-4 h-4 text-brand-500" />
         Machine Settings
-        <span className="text-xs font-normal text-slate-400 ml-1">as captured at import time</span>
+        <span className="text-xs font-normal text-slate-500 ml-1">as captured at import time</span>
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {groups.map(group => (
@@ -817,7 +826,7 @@ function DeviceIdentificationCard({ payload }: { payload: Record<string, unknown
       <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
         <Cpu className="w-4 h-4 text-brand-500" />
         Device Identification
-        <span className="text-xs font-normal text-slate-400 ml-1">as captured at import time</span>
+        <span className="text-xs font-normal text-slate-500 ml-1">as captured at import time</span>
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {groups.map(g => (
@@ -826,7 +835,7 @@ function DeviceIdentificationCard({ payload }: { payload: Record<string, unknown
             <dl className="space-y-1.5">
               {g.rows.map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-2 text-xs">
-                  <dt className="text-slate-400 shrink-0">{label}</dt>
+                  <dt className="text-slate-500 shrink-0">{label}</dt>
                   <dd className="text-slate-700 font-mono text-right break-all">{value}</dd>
                 </div>
               ))}
@@ -968,11 +977,11 @@ export function SessionDetail() {
         action={
           <div className="no-print flex items-center gap-2">
             <Link to="/sessions" className="btn-ghost">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               All Sessions
             </Link>
             <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
-              <Printer className="w-4 h-4" />
+              <Printer className="w-4 h-4" aria-hidden="true" />
               Print Report
             </button>
           </div>
@@ -1002,7 +1011,7 @@ export function SessionDetail() {
       <div ref={chartsRef} />
       {signals ? (
         <>
-          <div className="no-print mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400 select-none">
+          <div className="no-print mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 select-none">
             <span className="flex items-center gap-1.5">
               <MousePointer2 className="w-3 h-3 shrink-0" />
               <span>Click and drag on any chart to zoom into a time window</span>
@@ -1103,7 +1112,7 @@ export function SessionDetail() {
         </>
       ) : (
         <div className="card p-6 mb-4 text-center">
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-500 text-sm">
             No EDF signal data available for this session.
             Sessions imported from a real SD card show pressure, flow, and respiratory rate waveforms.
           </p>

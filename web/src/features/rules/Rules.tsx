@@ -64,7 +64,7 @@ function RuleGroup({ category, rules, onToggle, pendingId }: {
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
         <h2 className="text-sm font-semibold text-slate-700">{category}</h2>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500">
             {rules.filter(r => r.enabled).length} / {rules.length} enabled
           </span>
           <Toggle
@@ -161,7 +161,7 @@ export function Rules() {
         ))}
       </div>
 
-      <p className="mt-6 text-xs text-slate-400 max-w-2xl">
+      <p className="mt-6 text-xs text-slate-500 max-w-2xl">
         <Stethoscope className="w-3 h-3 inline mr-1 relative -top-px" />
         {rules.length} rules · {rules.filter(r => r.enabled).length} enabled
       </p>

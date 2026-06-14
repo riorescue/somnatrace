@@ -26,16 +26,16 @@ const nav = [
 
 export function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 flex flex-col w-60 bg-slate-900 text-slate-100">
+    <aside aria-label="Application navigation" className="fixed inset-y-0 left-0 flex flex-col w-60 bg-slate-900 text-slate-100">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-slate-800">
-        <Activity className="w-5 h-5 text-brand-400" />
+        <Activity className="w-5 h-5 text-brand-400" aria-hidden="true" />
         <span className="font-semibold tracking-tight text-white">SomnaTrace</span>
-        <span className="ml-auto text-xs text-slate-500">v0.1</span>
+        <span className="ml-auto text-xs text-slate-500" aria-hidden="true">v0.1</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav aria-label="Main" className="flex-1 px-3 py-4 space-y-0.5">
         {nav.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -49,7 +49,7 @@ export function Sidebar() {
               }`
             }
           >
-            <Icon className="w-4 h-4 shrink-0" />
+            <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
             {label}
           </NavLink>
         ))}

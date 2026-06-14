@@ -57,7 +57,7 @@ function ComplianceSettingsCard() {
         <ClipboardList className="w-4 h-4 text-brand-500" />
         Compliance Reporting
       </h2>
-      <p className="text-xs text-slate-400 mb-4">
+      <p className="text-xs text-slate-500 mb-4">
         Thresholds used in the Compliance &amp; Usage report. Changes apply immediately on next report load.
       </p>
 
@@ -78,9 +78,9 @@ function ComplianceSettingsCard() {
                 hoursValid ? 'border-slate-300' : 'border-red-400'
               }`}
             />
-            <span className="text-sm text-slate-400">hours (default: 4.0)</span>
+            <span className="text-sm text-slate-500">hours (default: 4.0)</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             A night counts as "compliant" when therapy is used for at least this many hours.
           </p>
         </div>
@@ -101,9 +101,9 @@ function ComplianceSettingsCard() {
                 pctValid ? 'border-slate-300' : 'border-red-400'
               }`}
             />
-            <span className="text-sm text-slate-400">% of nights (default: 70%)</span>
+            <span className="text-sm text-slate-500">% of nights (default: 70%)</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             The percentage of nights that must meet the hours threshold to be considered compliant.
             CMS standard is 70% of nights in the first 90 days.
           </p>
@@ -119,7 +119,7 @@ function ComplianceSettingsCard() {
           </button>
           {saved && (
             <span className="flex items-center gap-1 text-xs text-emerald-600">
-              <CheckCircle className="w-3.5 h-3.5" /> Saved
+              <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" /> Saved
             </span>
           )}
           {mutation.isError && (
@@ -180,7 +180,7 @@ function LeakThresholdsCard() {
         <Wind className="w-4 h-4 text-brand-500" />
         Leak Rate Thresholds
       </h2>
-      <p className="text-xs text-slate-400 mb-4">
+      <p className="text-xs text-slate-500 mb-4">
         P95 unintentional leak thresholds used in the Mask &amp; Device Performance report.
         Changes apply immediately on next report load.
       </p>
@@ -202,9 +202,9 @@ function LeakThresholdsCard() {
                 warnValid ? 'border-slate-300' : 'border-red-400'
               }`}
             />
-            <span className="text-sm text-slate-400">L/min (default: 24)</span>
+            <span className="text-sm text-slate-500">L/min (default: 24)</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Nights at or above this value are flagged as elevated leak.
           </p>
         </div>
@@ -225,9 +225,9 @@ function LeakThresholdsCard() {
                 alertValid ? 'border-slate-300' : 'border-red-400'
               }`}
             />
-            <span className="text-sm text-slate-400">L/min (default: 40)</span>
+            <span className="text-sm text-slate-500">L/min (default: 40)</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Nights at or above this value are flagged as severe leak. Must be greater than the elevated threshold.
           </p>
         </div>
@@ -242,7 +242,7 @@ function LeakThresholdsCard() {
           </button>
           {saved && (
             <span className="flex items-center gap-1 text-xs text-emerald-600">
-              <CheckCircle className="w-3.5 h-3.5" /> Saved
+              <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" /> Saved
             </span>
           )}
           {mutation.isError && (

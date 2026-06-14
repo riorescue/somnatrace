@@ -56,7 +56,7 @@ export function SessionsList() {
 
       {isFiltered && (
         <div className={`flex items-center gap-3 mb-4 px-4 py-3 rounded-xl border text-sm ${EVENT_COLORS[eventType] ?? 'text-slate-700 bg-slate-50 border-slate-200'}`}>
-          <Zap className="w-4 h-4 shrink-0" />
+          <Zap className="w-4 h-4 shrink-0" aria-hidden="true" />
           <span className="flex-1">
             Filtered to <strong>{EVENT_LABELS[eventType] ?? eventType}</strong> events
             {' '}since <strong>{sinceLabel}</strong>
@@ -64,16 +64,16 @@ export function SessionsList() {
           <button
             onClick={() => navigate('/sessions')}
             className="p-1 rounded hover:bg-black/10 transition-colors"
-            title="Clear filter"
+            aria-label="Clear filter"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       )}
 
       {sessions.length === 0 ? (
         <div className="card p-12 text-center">
-          <Moon className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <Moon className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
           {isFiltered ? (
             <>
               <p className="text-slate-500 text-sm">No sessions found with this filter.</p>
@@ -84,23 +84,23 @@ export function SessionsList() {
           ) : (
             <>
               <p className="text-slate-500 text-sm">No sessions yet.</p>
-              <p className="text-slate-400 text-xs mt-1">Sessions are created automatically when you import device data.</p>
+              <p className="text-slate-500 text-xs mt-1">Sessions are created automatically when you import device data.</p>
             </>
           )}
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Sleep sessions">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Start</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Duration</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">AHI</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Events/hr</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pressure P95</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Leak</th>
-                <th />
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Start</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Duration</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">AHI</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Events/hr</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pressure P95</th>
+                <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Leak</th>
+                <th scope="col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -113,7 +113,7 @@ export function SessionsList() {
                     <td className="px-5 py-3 text-slate-700 tabular-nums">{formatDuration(sess.duration_minutes)}</td>
                     <td className="px-5 py-3 tabular-nums">
                       <span className={`font-semibold ${color}`}>{formatAHI(sess.ahi)}</span>
-                      <span className="ml-1.5 text-xs text-slate-400">({label})</span>
+                      <span className="ml-1.5 text-xs text-slate-500">({label})</span>
                     </td>
                     <td className="px-5 py-3 text-slate-700 tabular-nums">
                       {sess.event_count > 0
@@ -125,9 +125,9 @@ export function SessionsList() {
                     <td className="px-5 py-3 text-right">
                       <Link
                         to={`/sessions/${sess.id}`}
-                        className="inline-flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="inline-flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                       >
-                        Detail <ArrowRight className="w-3 h-3" />
+                        Detail <ArrowRight className="w-3 h-3" aria-hidden="true" />
                       </Link>
                     </td>
                   </tr>

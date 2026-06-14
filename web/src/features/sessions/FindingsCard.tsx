@@ -172,7 +172,7 @@ function ReanalyzeDialog({
         {phase === 'error' && (
           <>
             <div className="flex justify-center mb-6">
-              <AlertCircle className="w-14 h-14 text-red-500" />
+              <AlertCircle className="w-14 h-14 text-red-500" aria-hidden="true" />
             </div>
             <h3 className="text-base font-semibold text-slate-800 mb-1.5">Analysis Failed</h3>
             <p className="text-sm text-slate-500 mb-7">{errorMessage ?? 'An unexpected error occurred.'}</p>
@@ -287,7 +287,7 @@ export function FindingsCard({ findings, sessionStart, sessionId, analyzedAt, on
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               title="Re-run clinical analysis on this session"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
               Re-analyze
             </button>
           </div>
@@ -295,7 +295,7 @@ export function FindingsCard({ findings, sessionStart, sessionId, analyzedAt, on
 
         {findings.length === 0 ? (
           <div className="rounded-lg bg-slate-50 border border-dashed border-slate-300 p-6 text-center">
-            <p className="text-slate-400 text-xs">
+            <p className="text-slate-500 text-xs">
               No clinical findings for this session. Use Re-analyze to run the current ruleset against the stored signal data.
             </p>
           </div>
