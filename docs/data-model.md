@@ -1,6 +1,6 @@
 # Data Model
 
-All tables live in a single SQLite database file (default: `~/.somnatrace/somnatrace.db`). Foreign keys are enforced and WAL mode is active. Seven migrations have been applied.
+All tables live in a single SQLite database file (default: `~/.somnatrace/somnatrace.db`). Foreign keys are enforced and WAL mode is active. Ten migrations have been applied.
 
 ## Tables
 
@@ -29,7 +29,7 @@ One row per import operation. Tracks source path, parser version, and outcome.
 | `device_id` | TEXT FK nullable | Resolved during import; NULL until device is identified |
 | `source_path` | TEXT | Absolute path to SD card or mirror directory |
 | `source_name` | TEXT | Human-readable label |
-| `status` | TEXT | `pending` \| `running` \| `complete` \| `failed` |
+| `status` | TEXT | `pending` \| `running` \| `pending_review` \| `complete` \| `failed` |
 | `session_count` | INTEGER | Sessions discovered |
 | `error_message` | TEXT | Set on failure |
 | `parser_version` | TEXT | Semver of the parser used |
@@ -110,7 +110,7 @@ Denormalized per-night aggregate. Unique on `(device_id, date)`; upserted on re-
 
 ### `session_findings`
 
-One row per clinical finding produced by the analysis engine. Populated at import time via `AnalysisService.RunAndStore`. Upserted on re-import.
+One row per clinical finding produced by the analysis engine. Populated at import time via `AnalysisService.RunAndStore` and on-demand via `POST /api/v1/sessions/{id}/analyze`.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -154,6 +154,35 @@ Raw `Identification.json` captured from the SD card at import time. Unique per s
 
 Stores product info, hardware identifiers, and firmware/software versions as they were at import time.
 
+### `rule_settings`
+
+Per-rule enable/disable state. A missing row means the rule is enabled by default; the engine checks this table before running each rule.
+
+| Column | Type | Notes |
+|---|---|---|
+| `rule_id` | TEXT PK | Matches the rule's `ID()` return value (e.g. `L-01`) |
+| `enabled` | INTEGER | `1` = enabled, `0` = disabled |
+| `updated_at` | TEXT | ISO 8601 timestamp of last change |
+
+### `app_settings`
+
+Key/value store for user-configurable application settings. All keys are seeded with defaults during migration and are always present.
+
+| Column | Type | Notes |
+|---|---|---|
+| `key` | TEXT PK | Setting name |
+| `value` | TEXT | String-encoded value (numeric values stored as decimal strings) |
+| `updated_at` | TEXT | ISO 8601 timestamp of last change |
+
+Current keys:
+
+| Key | Default | Description |
+|---|---|---|
+| `compliance_hours_threshold` | `4.0` | Minimum nightly usage (hours) to count as a compliant night |
+| `compliance_pct_threshold` | `70.0` | Target percentage of nights that meet the hours threshold |
+| `leak_warn_p95` | `24.0` | P95 leak rate (L/min) that triggers a warning finding |
+| `leak_alert_p95` | `40.0` | P95 leak rate (L/min) that triggers an alert finding |
+
 ### `schema_migrations`
 
 Internal migration tracking. Do not modify directly.
@@ -170,6 +199,8 @@ devices ──< imports ──< sessions ──< events
                     └── device_id on sessions
 ```
 
+`rule_settings` and `app_settings` are standalone configuration tables with no foreign key relationships.
+
 ## Migration History
 
 | # | File | Description |
@@ -181,3 +212,6 @@ devices ──< imports ──< sessions ──< events
 | 005 | `005_settings_snapshot_unique.sql` | Add unique index on `settings_snapshots(session_id)` for upsert support |
 | 006 | `006_device_identification_snapshots.sql` | Add `device_identification_snapshots` table |
 | 007 | `007_session_findings.sql` | Add `session_findings` table for clinical analysis engine output |
+| 008 | `008_rule_settings.sql` | Add `rule_settings` table for per-rule enable/disable |
+| 009 | `009_app_settings.sql` | Add `app_settings` table; seed compliance threshold defaults |
+| 010 | `010_leak_settings.sql` | Seed leak rate warning/alert threshold defaults into `app_settings` |

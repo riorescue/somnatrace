@@ -78,7 +78,7 @@ List all import operations, newest first.
 }
 ```
 
-`status` values: `pending` | `running` | `complete` | `failed`
+`status` values: `pending` | `running` | `pending_review` | `complete` | `failed`
 
 ### `POST /api/v1/imports`
 
@@ -103,13 +103,58 @@ Start a new import. The import runs asynchronously; poll `GET /api/v1/imports` t
 }
 ```
 
+### `GET /api/v1/imports/{id}/candidates`
+
+List session candidates discovered during an import in `pending_review` status.
+
+**Response** — `200 OK`
+```json
+{
+  "sessions": [
+    {
+      "id": "c4949c05a5ab5264",
+      "start_time": "2026-06-13T00:10:10Z",
+      "end_time": "2026-06-13T07:15:00Z",
+      "duration_minutes": 424.8,
+      "ahi": 2.1,
+      "event_count": 15,
+      "leak_rate": 0.0,
+      "pressure_p50": 5.6,
+      "already_imported": false
+    }
+  ]
+}
+```
+
+### `POST /api/v1/imports/{id}/confirm`
+
+Confirm which session candidates to import. Transitions the import from `pending_review` to running.
+
+**Request**
+```json
+{
+  "session_ids": ["c4949c05a5ab5264"]
+}
+```
+
+**Response** — `200 OK`
+```json
+{ "status": "ok" }
+```
+
 ---
 
 ## Sessions
 
 ### `GET /api/v1/sessions`
 
-List all sessions, newest first.
+List all sessions, newest first. Supports optional filtering.
+
+**Query params**
+| Param | Type | Description |
+|---|---|---|
+| `event_type` | string | Filter to sessions containing this event type |
+| `since` | string | ISO 8601 datetime — return sessions starting on or after this time |
 
 **Response**
 ```json
@@ -120,14 +165,14 @@ List all sessions, newest first.
       "device_id": "dev-23254995016",
       "import_id": "ab94c2674d3321e3",
       "start_time": "2026-06-13T00:10:10Z",
-      "end_time": "2026-06-13T00:19:22Z",
-      "duration_minutes": 9.2,
-      "ahi": 0.0,
+      "end_time": "2026-06-13T07:15:00Z",
+      "duration_minutes": 424.8,
+      "ahi": 2.1,
       "leak_rate_median": 0.0,
       "pressure_p50": 5.6,
       "pressure_p95": 6.8,
       "pressure_max": 7.0,
-      "event_count": 3,
+      "event_count": 15,
       "created_at": "2026-06-13T02:22:14Z"
     }
   ]
@@ -142,7 +187,7 @@ Get a single session by ID.
 
 ### `GET /api/v1/sessions/{id}/signals`
 
-Get stored EDF signal time-series for a session. Signals are sampled at the rates noted below.
+Get stored EDF signal time-series for a session.
 
 **Response** — `200 OK` or `404 Not Found`
 ```json
@@ -185,7 +230,7 @@ The response mirrors the nested structure of ResMed's `CurrentSettings.json`:
 
 ### `GET /api/v1/sessions/{id}/identification`
 
-Get the raw `Identification.json` payload captured at import time, returned as a parsed JSON object.
+Get the raw `Identification.json` payload captured at import time.
 
 **Response** — `200 OK` or `404 Not Found`
 
@@ -215,7 +260,7 @@ Get the raw `Identification.json` payload captured at import time, returned as a
 
 ### `GET /api/v1/sessions/{id}/events`
 
-Get the scored respiratory events for a session, parsed from EDF+ annotation (EVE) files at import time.
+Get the scored respiratory events for a session.
 
 **Response** — `200 OK` or `404 Not Found`
 ```json
@@ -236,11 +281,11 @@ Get the scored respiratory events for a session, parsed from EDF+ annotation (EV
 
 `type` values: `obstructive_apnea` | `central_apnea` | `hypopnea` | `spo2_desaturation` | `large_leak`
 
-Returns an empty `events` array when no events were recorded for the session.
+Returns an empty `events` array when no events were recorded.
 
 ### `GET /api/v1/sessions/{id}/findings`
 
-Get clinical analysis findings for a session. Findings are computed by the analysis engine at import time and stored in `session_findings`.
+Get clinical analysis findings for a session.
 
 **Response** — `200 OK` or `404 Not Found`
 ```json
@@ -256,7 +301,8 @@ Get clinical analysis findings for a session. Findings are computed by the analy
       "start_sec": 4320.0,
       "end_sec": 4500.0
     }
-  ]
+  ],
+  "analyzed_at": "2026-06-13T02:22:15Z"
 }
 ```
 
@@ -264,7 +310,14 @@ Get clinical analysis findings for a session. Findings are computed by the analy
 
 `start_sec` and `end_sec` are seconds from session start and may be `null` for session-level findings.
 
-Returns an empty `findings` array when the analysis engine produced no findings.
+### `POST /api/v1/sessions/{id}/analyze`
+
+Re-run the clinical analysis engine on a session. Clears existing findings and replaces them with the current output of all enabled rules. Useful for sessions imported before a rule was added or after threshold changes.
+
+**Response** — `200 OK`
+```json
+{ "status": "ok" }
+```
 
 ---
 
@@ -288,10 +341,10 @@ List daily summaries, newest first.
       "device_id": "dev-23254995016",
       "session_id": "c4949c05a5ab5264",
       "date": "2026-06-12",
-      "usage_minutes": 9.2,
-      "ahi": 0.0,
-      "ai_index": 0.0,
-      "hi_index": 0.0,
+      "usage_minutes": 424.8,
+      "ahi": 2.1,
+      "ai_index": 1.2,
+      "hi_index": 0.9,
       "leak_rate_median": 0.0,
       "leak_rate_p95": 0.0,
       "pressure_p50": 5.6,
@@ -334,7 +387,82 @@ Returns aggregated trend data for the Insights dashboard.
 
 - `summaries` — ordered oldest-first for chronological charting; same shape as the daily summaries list endpoint.
 - `event_counts` — map of `EventType → count` for the selected period; omits types with zero events.
-- `current_streak` and `longest_streak` — consecutive nights with ≥ 4 hours usage, computed from all-time data.
+- `current_streak` and `longest_streak` — consecutive nights with ≥ compliance threshold hours of usage, computed from all-time data.
+
+---
+
+## Analysis Rules
+
+### `GET /api/v1/rules`
+
+List all analysis rules and their enabled state.
+
+**Response**
+```json
+{
+  "rules": [
+    {
+      "id": "L-01",
+      "title": "Large Leak",
+      "description": "Leak rate exceeded the large-leak threshold for a sustained period.",
+      "category": "Leak",
+      "severity": "alert",
+      "enabled": true
+    }
+  ]
+}
+```
+
+### `PATCH /api/v1/rules/{id}`
+
+Enable or disable a specific rule. Takes effect on the next import or re-analyze.
+
+**Request**
+```json
+{ "enabled": false }
+```
+
+**Response** — `200 OK`
+```json
+{ "enabled": false }
+```
+
+---
+
+## App Settings
+
+### `GET /api/v1/settings`
+
+Return all user-configurable application settings.
+
+**Response**
+```json
+{
+  "compliance_hours_threshold": 4.0,
+  "compliance_pct_threshold": 70.0,
+  "leak_warn_p95": 24.0,
+  "leak_alert_p95": 40.0,
+  "first_session_date": "2026-05-14"
+}
+```
+
+`first_session_date` is `null` when no sessions have been imported yet. All other fields always have values (seeded from defaults in migration 009).
+
+### `PATCH /api/v1/settings`
+
+Update one or more configurable thresholds. Only include the fields you want to change.
+
+**Request**
+```json
+{
+  "compliance_hours_threshold": 4.0,
+  "compliance_pct_threshold": 70.0,
+  "leak_warn_p95": 24.0,
+  "leak_alert_p95": 40.0
+}
+```
+
+**Response** — `200 OK` — full settings object (same shape as `GET /api/v1/settings`)
 
 ---
 
@@ -350,10 +478,10 @@ Database row counts and file size.
   "counts": {
     "devices": 1,
     "imports": 3,
-    "sessions": 8,
-    "daily_summaries": 8,
-    "events": 0,
-    "session_signals": 1
+    "sessions": 30,
+    "daily_summaries": 30,
+    "events": 412,
+    "session_signals": 30
   },
   "size_bytes": 204800
 }
@@ -361,7 +489,7 @@ Database row counts and file size.
 
 ### `DELETE /api/v1/data`
 
-Delete all user data (devices, imports, sessions, signals, settings, identification snapshots). Schema is preserved.
+Delete all user data (devices, imports, sessions, signals, settings, identification snapshots, findings). Schema is preserved.
 
 **Response** — `200 OK`
 ```json
@@ -391,3 +519,59 @@ Scan mounted volumes for ResMed SD cards (checks for `Identification.json`).
 ```
 
 Returns an empty `cards` array if nothing is detected.
+
+---
+
+## Backups
+
+Backups are stored as clean SQLite snapshots in `~/.somnatrace/backups/`. Each backup ID encodes its creation timestamp (`YYYYMMDD-HHMMSS`).
+
+### `GET /api/v1/backups`
+
+List all available backup snapshots, newest first.
+
+**Response**
+```json
+{
+  "backups": [
+    {
+      "id": "20260614-153045",
+      "created_at": "2026-06-14T15:30:45Z",
+      "size_bytes": 4194304
+    }
+  ]
+}
+```
+
+### `POST /api/v1/backups`
+
+Create a new backup snapshot. Checkpoints the WAL and writes a clean copy of the database using `VACUUM INTO`.
+
+**Response** — `201 Created`
+```json
+{
+  "id": "20260614-153045",
+  "created_at": "2026-06-14T15:30:45Z",
+  "size_bytes": 4194304
+}
+```
+
+### `POST /api/v1/backups/{id}/restore`
+
+Restore from a named backup. Replaces all data in the running database with the contents of the backup using SQL `ATTACH` — no server restart is required. All current data is overwritten.
+
+**Response** — `200 OK`
+```json
+{ "status": "ok" }
+```
+
+Returns `400 Bad Request` if the backup ID is invalid or the file does not exist.
+
+### `DELETE /api/v1/backups/{id}`
+
+Permanently remove a backup snapshot file from disk.
+
+**Response** — `200 OK`
+```json
+{ "status": "ok" }
+```

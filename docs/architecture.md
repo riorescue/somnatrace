@@ -55,14 +55,14 @@ The import pipeline:
 ### 3. Storage Layer (`internal/db/`)
 
 SQLite accessed through `database/sql` with `modernc.org/sqlite` (pure-Go, no CGo). Two files:
-- `db.go` — opens the connection, applies WAL mode pragmas, and exposes the `DB` struct (which carries the file path for size calculations).
+- `db.go` — opens the connection, applies WAL mode pragmas, and exposes the `DB` struct (which carries the file path for size calculations and backup operations).
 - `migrations.go` — reads SQL files from the embedded `migrations` package and applies any not yet recorded in `schema_migrations`.
 
-Seven migrations have been applied (see [data-model.md](data-model.md) for schema details).
+Ten migrations have been applied (see [data-model.md](data-model.md) for schema details).
 
 ### 4a. Analysis Engine (`internal/analysis/`)
 
-Rule-based clinical analysis that runs after each import. The engine evaluates a set of `Rule` implementations against stored session signals and writes findings to `session_findings`.
+Rule-based clinical analysis that runs after each import or on-demand re-analyze. The engine evaluates a set of `Rule` implementations against stored session signals and writes findings to `session_findings`.
 
 - `engine.go` — `Rule` interface, `Engine` struct, `DefaultEngine()` factory, `Severity` type.
 - `baseline.go` — shared utilities: `rollingBaseline`, `percentile`, `findRuns`, `findRunsPred`.
@@ -72,19 +72,21 @@ Rule-based clinical analysis that runs after each import. The engine evaluates a
 - `rules_flow.go` — F-01 to F-02 (probable apnea, probable hypopnea from 1 Hz flow signal).
 - `rules_flowlim.go` — FL-01 to FL-05 (mild/moderate/severe flow limitation, FL burden, no-pressure-response).
 
-To add a new rule: implement `Rule` in the appropriate `rules_*.go` file and register it in `DefaultEngine()`. No migration or API change is needed.
+Rules can be individually enabled or disabled via `rule_settings`; the engine checks this table before running each rule. To add a new rule: implement `Rule` in the appropriate `rules_*.go` file and register it in `DefaultEngine()`. No migration or API change is needed.
 
 ### 4b. API Layer (`internal/api/`)
 
 Standard library `net/http` with Go 1.22 enhanced route patterns (`GET /path/{id}`). All routes are wired in `router.go`. Handler packages are thin: they parse the request, call a service method, and write JSON. CORS and request logging are composable middleware applied in the router.
 
-Current endpoints: health, devices, imports, sessions (list, get, signals, settings, identification, events, findings), daily summaries, insights, and utilities (stats, delete, vacuum, detect).
+Current endpoints: health, devices, imports (list, create, candidates, confirm), sessions (list, get, signals, settings, identification, events, findings, analyze), daily summaries, insights, rules (list, patch), app settings (get, patch), utilities (stats, delete, vacuum, detect), and backups (list, create, restore, delete).
 
 ### 5. Web UI Layer (`internal/web/`, `web/`)
 
 In production, Vite compiles the React app into `internal/web/dist/`. The Go binary embeds this directory via `//go:embed all:dist` and serves it with an SPA fallback handler. In development, the Go server runs on port 8080 and the Vite dev server runs on port 5173, with `/api/*` proxied to Go.
 
 Key frontend libraries: React 18, React Router v6, TanStack Query (data fetching), Recharts (charts), Tailwind CSS.
+
+Pages: Dashboard, Sessions, Insights, Reports (Compliance / Device / Effectiveness), Rules, Settings, Utilities, About.
 
 ## Request Flow
 
@@ -129,11 +131,33 @@ User selects source path (manual or auto-detected SD card)
       → UPDATE imports SET status='complete'
 ```
 
+## Backup Flow
+
+```
+User clicks "Back Up Now"
+  → POST /api/v1/backups
+  → UtilitiesService.CreateBackup
+      → PRAGMA wal_checkpoint(TRUNCATE)   (merge WAL into main file)
+      → VACUUM INTO '~/.somnatrace/backups/somnatrace-YYYYMMDD-HHMMSS.db'
+      → return Backup metadata
+
+User clicks "Restore"
+  → POST /api/v1/backups/{id}/restore
+  → UtilitiesService.RestoreBackup
+      → pin a dedicated sql.Conn
+      → PRAGMA foreign_keys=OFF
+      → ATTACH DATABASE 'backup.db' AS bk
+      → BEGIN
+      → for each table: DELETE FROM main.T; INSERT OR IGNORE INTO main.T SELECT * FROM bk.T
+      → COMMIT
+      → DETACH DATABASE bk
+      → PRAGMA foreign_keys=ON
+```
+
 ## Future Extensibility
 
 - **New device families**: add `internal/machine/<family>/` and implement `Detector` recognition + `Importer`.
 - **SpO₂ / pulse**: SA2 EDF files are already discovered by `DiscoverSessions`; add signal extraction for SpO₂/PR channels and store them in `session_signals`.
 - **New analysis rules**: implement `Rule` in `internal/analysis/rules_*.go` and register in `DefaultEngine()`. No schema change needed.
-- **Re-analyze**: expose a `POST /api/v1/sessions/{id}/analyze` endpoint to re-run the analysis engine on sessions imported before the engine existed.
 - **Multi-user**: add a `users` table and auth middleware; all existing routes gain a user-scoped filter.
 - **Hosted deployment**: replace `modernc.org/sqlite` with a Postgres driver and update repository queries.

@@ -2,7 +2,7 @@
 
 **Local-first sleep therapy data viewer.** Import your SD card exports, explore nightly sessions, and track therapy trends — entirely on your own machine. No account, no cloud, no telemetry.
 
-> **Status: v0.1 — Functional with real ResMed AirSense 11 data.** Full EDF parsing, signal visualization, event timeline, clinical analysis engine, multi-night insights, and machine settings capture are all working.
+> **Status: v0.1 — Functional with real ResMed AirSense 11 data.** Full EDF parsing, signal visualization, event timeline, clinical analysis engine, multi-night insights, reports, configurable thresholds, and machine settings capture are all working.
 
 ---
 
@@ -23,10 +23,15 @@ SomnaTrace is an open-source alternative: insert your SD card, point the app at 
 - **Synchronized hover** — hovering on any chart cross-highlights the same timestamp on all others
 - **Event timeline** — scored respiratory events (obstructive/central apneas, hypopneas, large leaks, SpO₂ desaturations) parsed from EDF+ annotation files and displayed with timeline strip and event list
 - **Clinical analysis engine** — 20+ rule-based findings (pressure hunting, large leaks, respiratory rate anomalies, flow limitation burden, probable apneas/hypopneas) run automatically at import and displayed per-session with severity classification (Info/Warning/Alert/Critical)
+- **Rules configuration** — enable or disable individual analysis rules from the Rules page
 - **Multi-night insights** — AHI trend, nightly usage, pressure profile, event breakdown, night-quality calendar, therapy streaks; configurable 7-day to 1-year window
+- **Reports** — Compliance, Device, and Effectiveness reports with print-friendly layouts
 - **Machine settings capture** — `CurrentSettings.json` stored per-session at import time, displayed on session detail
 - **Device identification capture** — `Identification.json` stored per-session, showing product info, software versions, and hardware ID
-- **Utilities** — database stats, delete all data, vacuum, CSV export, SD card detection
+- **Re-analyze** — re-run the clinical analysis engine on any session from the session detail page
+- **Configurable thresholds** — compliance hours/percentage and leak rate warning/alert levels are user-adjustable from the Settings page
+- **Backup & Restore** — one-click database backup with multiple named snapshots; one-click restore from any saved backup (no server restart required)
+- **Utilities** — database stats, vacuum, CSV export, SD card detection, delete all data
 
 ---
 
@@ -71,6 +76,8 @@ Open [http://localhost:8080](http://localhost:8080).
 | `make build` | Build frontend + Go binary |
 | `make build-go` | Build Go binary only |
 | `make build-ui` | Build frontend into `internal/web/dist/` |
+| `make seed` | Seed 30 days of synthetic data |
+| `make seed DAYS=N` | Seed N days of synthetic data |
 | `make test` | Run Go tests |
 | `make lint` | Run Go vet + TypeScript type-check |
 | `make clean` | Remove build artefacts |
@@ -85,7 +92,7 @@ All settings are read from environment variables with sensible defaults.
 |---|---|---|
 | `SOMNATRACE_HOST` | `127.0.0.1` | Listen host |
 | `SOMNATRACE_PORT` | `8080` | Listen port |
-| `SOMNATRACE_DATA_DIR` | `~/.somnatrace` | Where the database lives |
+| `SOMNATRACE_DATA_DIR` | `~/.somnatrace` | Where the database and backups live |
 | `SOMNATRACE_DB_PATH` | `$DATA_DIR/somnatrace.db` | Full database path |
 | `SOMNATRACE_MODE` | `development` | `development` or `production` |
 
@@ -95,6 +102,7 @@ All settings are read from environment variables with sensible defaults.
 
 ```
 cmd/somnatrace/     Entry point
+cmd/seed/           Synthetic data seeder
 internal/
   api/              HTTP router, handlers, middleware
   app/              Application wiring
@@ -107,7 +115,7 @@ internal/
   models/           Shared data models
   service/          Business logic layer
   web/              Embedded frontend assets
-migrations/         SQL migration files (007 migrations applied)
+migrations/         SQL migration files (010 migrations applied)
 web/                Vite + React + TypeScript frontend
 docs/               Architecture and developer guides
 ```
@@ -119,7 +127,6 @@ docs/               Architecture and developer guides
 - SpO₂ & pulse rate visualization (SA2 EDF files are already discovered; signal extraction not yet implemented)
 - Philips DreamStation support
 - OSCAR-compatible data import
-- Re-analyze button for sessions imported before the analysis engine was added
 
 ---
 

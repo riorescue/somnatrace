@@ -36,10 +36,10 @@ To start them independently:
 
 ```bash
 # Go API only
-go run ./cmd/somnatrace/... --dev
+make api
 
 # Vite dev server only (in web/)
-cd web && npm run dev
+make ui
 ```
 
 ## Available Commands
@@ -52,9 +52,28 @@ cd web && npm run dev
 | `make build` | Full production build |
 | `make build-ui` | Frontend only (outputs to `internal/web/dist/`) |
 | `make build-go` | Go binary only (requires `dist/` to exist) |
+| `make seed` | Seed 30 days of synthetic sessions |
+| `make seed DAYS=N` | Seed N days of synthetic sessions |
 | `make test` | `go test ./...` |
 | `make lint` | `go vet` + TypeScript type-check |
 | `make clean` | Remove binary and build artifacts |
+
+## Seeding Synthetic Data
+
+The seed command generates realistic CPAP session data for development without needing a real SD card. Each run creates a new random device and a fresh import record.
+
+```bash
+# Default — 30 days
+make seed
+
+# A full year of data
+make seed DAYS=365
+
+# Target a specific database
+go run ./cmd/seed/ --days 90 --db /path/to/somnatrace.db
+```
+
+The seed command requires the server to have been started at least once (so migrations have been applied). Running it multiple times adds additional devices — it does not overwrite existing data.
 
 ## Frontend ↔ Backend Interaction
 
@@ -86,7 +105,8 @@ The `make build-ui` command compiles the frontend to `internal/web/dist/`. The `
 2. Add the handler function in `internal/api/handlers/`.
 3. Register the route in `internal/api/router.go`.
 4. Add the corresponding API client method in `web/src/lib/api.ts`.
-5. Consume it with `useQuery` (or `useMutation`) in the relevant feature component.
+5. Add any new response types to `web/src/types/index.ts`.
+6. Consume it with `useQuery` (or `useMutation`) in the relevant feature component.
 
 ## Adding a New Migration
 
@@ -94,7 +114,13 @@ The `make build-ui` command compiles the frontend to `internal/web/dist/`. The `
 2. Write idempotent SQL (`CREATE TABLE IF NOT EXISTS`, `CREATE UNIQUE INDEX IF NOT EXISTS`).
 3. Restart the server — migrations run automatically on startup via `db.ApplyMigrations`.
 
-Current highest migration: `007_session_findings.sql`.
+Current highest migration: `010_leak_settings.sql`.
+
+## Adding a New Analysis Rule
+
+1. Implement the `Rule` interface in the appropriate `internal/analysis/rules_*.go` file (or create a new one).
+2. Register it in `DefaultEngine()` in `engine.go`.
+3. No schema change or API change is needed — `rule_settings` automatically picks up any new rule ID.
 
 ## Adding a New Device Family
 
@@ -127,6 +153,8 @@ For ResMed AirSense 11:
 
 The SQLite database lives at `~/.somnatrace/somnatrace.db` by default. WAL sidecar files (`-wal`, `-shm`) are normal during operation. The Utilities page exposes Vacuum to merge WAL into the main file and reclaim space.
 
+Database backups are stored in `~/.somnatrace/backups/` as clean single-file snapshots (no WAL sidecar).
+
 To inspect the database directly:
 
 ```bash
@@ -144,4 +172,10 @@ SELECT 'sessions', COUNT(*) FROM sessions
 UNION ALL SELECT 'session_signals', COUNT(*) FROM session_signals
 UNION ALL SELECT 'settings_snapshots', COUNT(*) FROM settings_snapshots
 UNION ALL SELECT 'device_identification_snapshots', COUNT(*) FROM device_identification_snapshots;
+
+-- View current app settings
+SELECT key, value FROM app_settings;
+
+-- View rule enable/disable state
+SELECT rule_id, enabled FROM rule_settings ORDER BY rule_id;
 ```
