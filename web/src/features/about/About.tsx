@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Server, Database, Cpu, Shield, CheckCircle2, Clock } from 'lucide-react'
+import { Server, Database, Cpu, Shield, CheckCircle2, Clock, Accessibility } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
 import { FullPageSpinner } from '@/components/LoadingSpinner'
@@ -112,6 +112,38 @@ export function About() {
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Accessibility */}
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <Accessibility className="w-4 h-4 text-brand-500" aria-hidden="true" />
+            Accessibility
+          </h2>
+          <p className="text-sm text-slate-600 mb-3">
+            SomnaTrace targets <strong>WCAG 2.2 Level AA</strong> conformance. The interface is designed to be
+            usable with a keyboard alone, with a screen reader, and by users who have configured
+            reduced motion or high-contrast preferences at the OS level.
+          </p>
+          <div className="rounded-lg border border-slate-200 divide-y divide-slate-100 text-sm">
+            {[
+              ['Keyboard navigation',  'Full tab order throughout; skip-to-content link at page top; Escape closes dialogs and popovers'],
+              ['Screen reader support','Landmark regions labelled; all interactive elements have accessible names; dynamic content announced via ARIA live regions'],
+              ['Focus visibility',     'Keyboard focus outline always visible (:focus-visible); suppressed for mouse users'],
+              ['Color contrast',       'All text meets the 4.5:1 AA minimum ratio, including on the dark sidebar background'],
+              ['Color independence',   'Status and severity information is never conveyed by color alone — text labels accompany all color-coded values'],
+              ['Reduced motion',       'All CSS animations and transitions are suppressed when the OS prefers-reduced-motion setting is active'],
+              ['Charts',               'Recharts visualizations are hidden from assistive technology; each chart has a screen-reader-only text description as an alternative'],
+            ].map(([feature, detail]) => (
+              <div key={feature} className="px-4 py-3">
+                <p className="font-medium text-slate-700">{feature}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{detail}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500 mt-3">
+            Found an accessibility issue? Please open a GitHub issue with the page, element, and assistive technology affected.
+          </p>
         </div>
 
         {/* Privacy */}
