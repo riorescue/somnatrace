@@ -31,7 +31,7 @@ export function Sidebar() {
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-slate-800">
         <Activity className="w-5 h-5 text-brand-400" aria-hidden="true" />
         <span className="font-semibold tracking-tight text-white">SomnaTrace</span>
-        <span className="ml-auto text-xs text-slate-500" aria-hidden="true">v0.1</span>
+        <span className="ml-auto text-xs text-slate-400" aria-hidden="true">v0.1</span>
       </div>
 
       {/* Navigation */}
@@ -56,7 +56,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-slate-800 text-xs text-slate-500">
+      <div className="px-5 py-4 border-t border-slate-800 text-xs text-slate-400">
         Local-first · Open source
       </div>
     </aside>
