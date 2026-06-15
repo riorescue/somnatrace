@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Command somnatrace is the main entry point for the SomnaTrace server.
 // It wires together configuration, the database, and the HTTP router, then
 // listens until an OS signal (SIGINT or SIGTERM) requests a graceful shutdown.

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package migrations embeds all SQL migration files into the binary so that
 // the server can apply schema changes without any external file dependencies.
 // Files are named NNN_description.sql and applied in lexicographic order by

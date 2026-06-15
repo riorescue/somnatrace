@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'

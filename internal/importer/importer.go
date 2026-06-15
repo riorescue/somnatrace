@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package importer defines the Importer interface and the data types that flow
 // between the import pipeline and the service layer. Each supported device
 // family provides its own Importer implementation (e.g. ResMedImporter).

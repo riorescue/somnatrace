@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {

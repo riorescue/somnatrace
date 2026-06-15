@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package analysis provides a rule-based clinical analysis engine for sleep
 // therapy session data. Rules are self-contained structs implementing Rule;
 // new rules can be added by implementing the interface and registering with

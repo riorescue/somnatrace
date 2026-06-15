@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -64,6 +67,13 @@ function fmtDate(dateStr: string): string {
   return `${m}/${d}`
 }
 
+function localDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function usageColor(hours: number): string {
   if (hours >= 4)  return '#22c55e'
   if (hours >= 2)  return '#f59e0b'
@@ -85,7 +95,7 @@ function fillDateRange(summaries: DailySummary[], days: number): DailySummary[] 
   for (let i = days; i >= 1; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    const key = d.toISOString().slice(0, 10)
+    const key = localDateStr(d)
     result.push(byDate.get(key) ?? {
       id: '', device_id: '', session_id: '', date: key,
       usage_minutes: 0, ahi: 0, ai_index: 0, hi_index: 0,
@@ -107,7 +117,7 @@ interface CalendarProps {
 
 function NightCalendar({ summaries, days, firstSessionDate }: CalendarProps) {
   const navigate = useNavigate()
-  const [hovered, setHovered] = useState<string | null>(null)
+  const [, setHovered] = useState<string | null>(null)
 
   const byDate = new Map(summaries.map(s => [s.date, s]))
 
@@ -307,7 +317,7 @@ export function Insights() {
     const today = new Date()
     const windowStart = new Date(today)
     windowStart.setDate(windowStart.getDate() - days)
-    const windowStartDate = windowStart.toISOString().slice(0, 10)
+    const windowStartDate = localDateStr(windowStart)
     const isNewUser = firstSessionDate !== null && firstSessionDate > windowStartDate
     let effectiveDays = days
     if (isNewUser && firstSessionDate) {
@@ -375,7 +385,7 @@ export function Insights() {
   const sinceDate = useMemo(() => {
     const d = new Date()
     d.setDate(d.getDate() - days)
-    return d.toISOString().slice(0, 10)
+    return localDateStr(d)
   }, [days])
 
   const eventPieData = useMemo(

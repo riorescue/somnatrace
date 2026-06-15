@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package app wires together the database, service layer, and HTTP router
 // into a single App value that the main entry point can start and stop.
 package app

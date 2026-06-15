@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package resmed contains all ResMed AirSense/AirCurve-specific parsing logic:
 // SD card layout constants, session file discovery, STR.edf decoding, EDF+D
 // event annotation parsing, device settings and identification extraction.

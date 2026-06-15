@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package service implements the business logic layer. Each service type owns
 // one domain area (sessions, imports, summaries, etc.) and is the only code
 // that touches the database directly. Handlers call services; services do not

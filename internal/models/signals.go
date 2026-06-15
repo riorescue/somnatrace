@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 package models
 
 // SignalPoint is a single time-stamped sample in an EDF signal time-series.

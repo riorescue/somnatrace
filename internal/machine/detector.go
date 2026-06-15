@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package machine provides device detection and a registry of per-brand import
 // pipelines. To add support for a new device family, create a sub-package
 // (e.g. internal/machine/philips/), implement the importer.Importer interface,

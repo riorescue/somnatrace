@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package models defines the shared data types used across the service,
 // importer, and API layers. All structs are plain value types with JSON tags;
 // business logic lives in the service layer, not here.

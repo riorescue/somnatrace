@@ -1,11 +1,14 @@
-import { useMemo } from 'react'
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
+import { useMemo, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
   ResponsiveContainer,
 } from 'recharts'
-import { CheckCircle, AlertCircle, XCircle, Moon, Clock, TrendingUp, Info } from 'lucide-react'
+import { CheckCircle, AlertCircle, XCircle, Moon, Clock, TrendingUp, Info, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { FullPageSpinner } from '@/components/LoadingSpinner'
 import { ErrorBanner } from '@/components/ErrorBanner'
@@ -27,13 +30,20 @@ function fmtDate(dateStr: string): string {
   return `${m}/${d}`
 }
 
+function localDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function fillDateRange(summaries: DailySummary[], days: number): DailySummary[] {
   const byDate = new Map(summaries.map(s => [s.date, s]))
   const result: DailySummary[] = []
   for (let i = days; i >= 1; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    const key = d.toISOString().slice(0, 10)
+    const key = localDateStr(d)
     result.push(byDate.get(key) ?? {
       id: '', device_id: '', session_id: '', date: key,
       usage_minutes: 0, ahi: 0, ai_index: 0, hi_index: 0,
@@ -127,6 +137,121 @@ function currentMissedStreak(filled: DailySummary[]): number {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+function MissedStreaksCard({ streaks }: { streaks: number[] }) {
+  const [showInfo, setShowInfo] = useState(false)
+
+  useEffect(() => {
+    if (!showInfo) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowInfo(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showInfo])
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <Moon className="w-4 h-4 text-brand-500" />
+          Missed Night Streaks
+          <span className="text-xs font-normal text-slate-400 ml-1">last 90 days</span>
+        </h2>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="text-slate-300 hover:text-brand-500 transition-colors p-1 rounded"
+          title="About Missed Night Streaks"
+          aria-label="About Missed Night Streaks"
+        >
+          <Info className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      {streaks.length === 0 ? (
+        <div className="flex items-center gap-2 text-sm text-emerald-600">
+          <CheckCircle className="w-4 h-4" />
+          No missed night streaks — perfect attendance
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {streaks.slice(0, 8).map((s, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <div
+                  className="h-6 rounded"
+                  style={{
+                    width: `${Math.max(8, (s / (streaks[0] || 1)) * 100)}%`,
+                    backgroundColor: s >= 7 ? '#ef4444' : s >= 3 ? '#f59e0b' : '#94a3b8',
+                  }}
+                />
+              </div>
+              <span className="text-xs font-medium text-slate-600 shrink-0 tabular-nums">
+                {s} {s === 1 ? 'night' : 'nights'}
+              </span>
+              <span className="text-xs text-slate-400 shrink-0 w-14">
+                {i === 0 ? 'longest' : ''}
+              </span>
+            </div>
+          ))}
+          {streaks.length > 8 && (
+            <p className="text-xs text-slate-500">+{streaks.length - 8} more streaks</p>
+          )}
+        </div>
+      )}
+
+      {showInfo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => setShowInfo(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                <Moon className="w-4 h-4 text-brand-500" />
+                Missed Night Streaks
+              </h3>
+              <button
+                onClick={() => setShowInfo(false)}
+                aria-label="Close"
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3 text-sm text-slate-600">
+              <p>
+                A missed night streak is a run of consecutive nights with no recorded therapy session.
+                Bars are sorted longest-first.
+              </p>
+              <p>
+                Color indicates severity:
+              </p>
+              <ul className="space-y-1.5 pl-1">
+                <li className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm shrink-0 bg-slate-400" />
+                  <span>1–2 nights — minor gap</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm shrink-0 bg-amber-400" />
+                  <span>3–6 nights — notable gap</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm shrink-0 bg-red-400" />
+                  <span>7+ nights — extended gap, may affect compliance</span>
+                </li>
+              </ul>
+              <p className="text-slate-500 text-xs pt-1">
+                Only nights since your first recorded session are counted. Nights before therapy began are excluded.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StatusBadge({ status }: { status: Status }) {
   if (status === 'good') return (
     <span className="inline-flex items-center gap-1 text-xs font-semibold border px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border-emerald-200">
@@ -163,10 +288,13 @@ function barColor(hours: number, threshold: number): string {
 }
 
 function UsageTooltip({ active, payload, label, threshold }: {
-  active?: boolean; payload?: Array<{ value: number }>; label?: string; threshold: number
+  active?: boolean
+  payload?: Array<{ value?: number | string | (string | number)[] }>
+  label?: string
+  threshold: number
 }) {
   if (!active || !payload?.length) return null
-  const hrs = payload[0].value
+  const hrs = Number(payload[0].value ?? 0)
   return (
     <div className="bg-white border border-slate-200 rounded-lg shadow px-3 py-2 text-xs">
       <p className="font-medium text-slate-700">{label}</p>
@@ -238,8 +366,11 @@ export function ComplianceReport() {
       preTherapy: firstSessionDate !== null && d.date < firstSessionDate,
     }))
 
-    const streaks = missedStreaks(filled)
-    const currentStreak = currentMissedStreak(filled)
+    const therapyFilled = firstSessionDate
+      ? filled.filter(d => d.date >= firstSessionDate)
+      : filled
+    const streaks = missedStreaks(therapyFilled)
+    const currentStreak = currentMissedStreak(therapyFilled)
     return { stats7, stats30, stats90, chartData, streaks, currentStreak }
   }, [summariesData, hoursThreshold, pctThreshold, firstSessionDate])
 
@@ -407,7 +538,9 @@ export function ComplianceReport() {
               y={hoursThreshold} stroke="#22c55e" strokeDasharray="4 2" strokeWidth={1.5}
               label={{ value: `${hoursThreshold}h`, fontSize: 9, fill: '#22c55e', position: 'right' }}
             />
-            <Tooltip content={(props) => <UsageTooltip {...props} threshold={hoursThreshold} />} />
+            <Tooltip content={({ active, payload, label }) => (
+              <UsageTooltip active={active} payload={payload} label={label} threshold={hoursThreshold} />
+            )} />
             <Bar dataKey="hours" radius={[2, 2, 0, 0]} maxBarSize={20}>
               {chartData.map((d, i) => (
                 <Cell
@@ -440,43 +573,7 @@ export function ComplianceReport() {
 
       {/* ── Missed night streaks ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <Moon className="w-4 h-4 text-brand-500" />
-            Missed Night Streaks
-            <span className="text-xs font-normal text-slate-400 ml-1">last 90 days</span>
-          </h2>
-          {streaks.length === 0 ? (
-            <div className="flex items-center gap-2 text-sm text-emerald-600">
-              <CheckCircle className="w-4 h-4" />
-              No missed night streaks — perfect attendance
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {streaks.slice(0, 8).map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="h-6 rounded flex items-center px-2 text-xs font-medium text-white"
-                      style={{
-                        width: `${Math.max(12, (s / (streaks[0] || 1)) * 100)}%`,
-                        backgroundColor: s >= 7 ? '#ef4444' : s >= 3 ? '#f59e0b' : '#94a3b8',
-                      }}
-                    >
-                      {s} {s === 1 ? 'night' : 'nights'}
-                    </div>
-                  </div>
-                  <span className="text-xs text-slate-500 shrink-0 w-12">
-                    {i === 0 ? 'longest' : ''}
-                  </span>
-                </div>
-              ))}
-              {streaks.length > 8 && (
-                <p className="text-xs text-slate-500">+{streaks.length - 8} more streaks</p>
-              )}
-            </div>
-          )}
-        </div>
+        <MissedStreaksCard streaks={streaks} />
 
         <div className="card p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Current Status</h2>

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package config loads application settings from environment variables and
 // exposes them through a single Config struct. All fields have sensible
 // defaults so the server starts correctly with no environment configuration.

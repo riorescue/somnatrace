@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useState, useEffect, useCallback } from 'react'
 import { Zap, Info, X, ZoomIn } from 'lucide-react'
 import type { Event, EventType } from '@/types'

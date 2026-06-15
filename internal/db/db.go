@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package db manages the SQLite connection and schema migrations.
 // It wraps database/sql with a pure-Go driver (modernc.org/sqlite) so the
 // binary compiles without CGo. WAL mode is enabled at connection time for

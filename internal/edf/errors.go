@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package edf implements a reader for European Data Format (EDF and EDF+) files.
 // EDF is the on-device storage format used by ResMed therapy machines to record
 // continuous physiological signals (pressure, flow, leak, SpO₂) and scored

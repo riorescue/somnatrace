@@ -3,7 +3,7 @@ PKG      := ./cmd/somnatrace
 VERSION  := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS  := -ldflags "-X github.com/somnatrace/somnatrace/internal/config.Version=$(VERSION)"
 
-.PHONY: all build api ui dev test clean docker-build docker-up seed help
+.PHONY: all build api ui dev test clean docker-build docker-up seed notices copyright help
 
 all: build
 
@@ -64,6 +64,14 @@ docker-build:
 ## docker-up: start with docker compose
 docker-up:
 	docker compose up
+
+## notices: regenerate THIRD_PARTY_LICENSES.md from current dependency tree
+notices:
+	@bash scripts/generate-notices.sh
+
+## copyright: add SPDX copyright headers to all Go and TypeScript source files
+copyright:
+	@bash scripts/add-copyright-headers.sh
 
 ## help: show this help
 help:

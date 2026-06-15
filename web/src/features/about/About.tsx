@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useQuery } from '@tanstack/react-query'
 import { Server, Database, Cpu, Shield, CheckCircle2, Clock, Accessibility } from 'lucide-react'
 import { api } from '@/lib/api'

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package web embeds the compiled React frontend into the binary and provides
 // helpers for serving it. In production the Go server serves both the API and
 // the static UI from a single executable. In development, Vite runs separately

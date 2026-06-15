@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, CheckSquare, Square, AlertCircle, Loader2, DatabaseZap } from 'lucide-react'
@@ -26,6 +29,7 @@ export function SessionReviewModal({ importId, onClose }: Props) {
     modal.querySelectorAll<HTMLElement>(focusableSelector)[0]?.focus()
 
     function handleKeyDown(e: KeyboardEvent) {
+      if (!modal) return
       if (e.key === 'Escape') { onClose(); return }
       if (e.key !== 'Tab') return
       const els = Array.from(modal.querySelectorAll<HTMLElement>(focusableSelector))

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import type { AppSettings, Backup, DbStats, DetectedCard, Device, DailySummary, Event, Finding, HealthStatus, Import, InsightsData, RuleStatus, Session, SessionCandidate, SessionSignals } from '@/types'
 
 const BASE = '/api/v1'

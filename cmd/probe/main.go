@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Command probe is a developer utility that parses and prints EDF file
 // metadata for a hard-coded set of paths on a mounted ResMed SD card.
 // It is not part of the production binary — use it to inspect raw signal

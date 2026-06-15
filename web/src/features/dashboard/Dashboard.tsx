@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Moon, Upload, Activity } from 'lucide-react'
@@ -25,7 +28,7 @@ export function Dashboard() {
   })
   const sessions = useQuery({
     queryKey: ['sessions'],
-    queryFn: api.sessions.list,
+    queryFn: () => api.sessions.list(),
   })
 
   if (summaries.isLoading) return <FullPageSpinner />

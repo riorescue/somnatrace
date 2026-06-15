@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package api wires HTTP routes to their handler implementations and applies
 // shared middleware (CORS, request logging). All routes are prefixed with
 // /api/v1/. The embedded frontend is registered separately by the web package.

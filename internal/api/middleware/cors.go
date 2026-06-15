@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package middleware provides composable HTTP middleware for the SomnaTrace API.
 package middleware
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 // Package handlers contains one handler type per API resource. Each handler
 // is constructed with a pointer to the relevant service, parses the HTTP
 // request, delegates to the service, and writes a JSON response. Handlers

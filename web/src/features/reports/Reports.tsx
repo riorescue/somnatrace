@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
+// SPDX-License-Identifier: MIT
+
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { Printer } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
