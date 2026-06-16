@@ -392,58 +392,7 @@ brew install goreleaser
 go install github.com/goreleaser/goreleaser/v2@latest
 ```
 
-Create `.goreleaser.yaml` in the repository root:
-
-```yaml
-version: 2
-
-before:
-  hooks:
-    # Build the frontend before any Go compilation
-    - make build-ui
-
-builds:
-  - id: somnatrace
-    main: ./cmd/somnatrace
-    binary: somnatrace
-    ldflags:
-      - -s -w
-      - -X github.com/riorescue/somnatrace/internal/config.Version={{.Version}}
-    goos:
-      - linux
-      - darwin
-      - windows
-    goarch:
-      - amd64
-      - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64   # Windows ARM64 has limited user base; add back when needed
-
-archives:
-  - id: default
-    name_template: "somnatrace-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
-    format_overrides:
-      - goos: windows
-        formats: [zip]
-    files:
-      - README.md
-      - LICENSE
-
-checksum:
-  name_template: "somnatrace-{{ .Version }}-checksums.txt"
-
-snapshot:
-  version_template: "{{ .Tag }}-next"
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-      - "^chore:"
-```
+`.goreleaser.yaml` is already included in the repository root and pre-configured for all supported platforms.
 
 **Test a snapshot build locally** (no git tag needed):
 
@@ -456,11 +405,11 @@ Artifacts land in `dist/`.
 **Cut a real release:**
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 
-# Publish to GitHub Releases (requires GITHUB_TOKEN)
-goreleaser release --clean
+# Publish to GitHub Releases
+GITHUB_TOKEN=$(gh auth token) goreleaser release --clean
 ```
 
 GoReleaser creates a GitHub Release automatically, uploads all archives, and generates a checksum file.

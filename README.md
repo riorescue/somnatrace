@@ -66,6 +66,23 @@ Open [http://localhost:8080](http://localhost:8080).
 
 ---
 
+## Running in Production
+
+The quickest path is a pre-built binary from the [Releases page](https://github.com/riorescue/somnatrace/releases). Download the archive for your platform, extract it, and run:
+
+```bash
+# macOS — remove quarantine if downloaded via browser
+xattr -d com.apple.quarantine somnatrace
+
+./somnatrace
+```
+
+The app starts on [http://127.0.0.1:8080](http://127.0.0.1:8080). The database is created automatically on first launch at `~/.somnatrace/somnatrace.db`.
+
+For running as a system service (launchd, systemd, Windows service wrapper), building from source, Docker deployment, and data management, see **[docs/deployment.md](docs/deployment.md)**.
+
+---
+
 ## Build Commands
 
 | Command | Description |
