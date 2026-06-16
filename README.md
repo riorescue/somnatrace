@@ -2,7 +2,7 @@
 
 **Local-first sleep therapy data viewer.** Import your SD card exports, explore nightly sessions, and track therapy trends — entirely on your own machine. No account, no cloud, no telemetry.
 
-> **Status: v0.1 — Functional with real ResMed AirSense 11 data.** Full EDF parsing, signal visualization, event timeline, clinical analysis engine, multi-night insights, reports, configurable thresholds, and machine settings capture are all working.
+> **Status: v0.2.0 — Functional with real CPAP therapy data.** Full EDF parsing, signal visualization, event timeline, clinical analysis engine, multi-night insights, reports, configurable thresholds, and machine settings capture are all working.
 
 ---
 
@@ -17,7 +17,7 @@ SomnaTrace is an open-source alternative: insert your SD card, point the app at 
 ## What Works Today
 
 - **Real EDF parsing** — full binary header + signal + data record decoding, including EDF+D annotation tracks
-- **ResMed AirSense/AirCurve 10 & 11 support** — automatic SD card detection, session discovery, timezone-aware timestamp parsing
+- **CPAP/BiPAP device support** — automatic SD card detection, session discovery, timezone-aware timestamp parsing (ResMed AirSense/AirCurve 10 & 11 currently supported; additional brands planned)
 - **Signal visualization** — pressure, flow waveform, respiratory rate, and leak rate charts with timeline slider and expand mode
 - **Clinical reference lines** — per-chart upper/lower bounds reflecting accepted clinical ranges (e.g. Large Leak at 24 L/min, normal resp rate 12–20 br/min)
 - **Synchronized hover** — hovering on any chart cross-highlights the same timestamp on all others
@@ -26,8 +26,8 @@ SomnaTrace is an open-source alternative: insert your SD card, point the app at 
 - **Rules configuration** — enable or disable individual analysis rules from the Rules page
 - **Multi-night insights** — AHI trend, nightly usage, pressure profile, event breakdown, night-quality calendar, therapy streaks; configurable 7-day to 1-year window
 - **Reports** — Compliance, Device, and Effectiveness reports with print-friendly layouts
-- **Machine settings capture** — `CurrentSettings.json` stored per-session at import time, displayed on session detail
-- **Device identification capture** — `Identification.json` stored per-session, showing product info, software versions, and hardware ID
+- **Machine settings capture** — device settings stored per-session at import time, displayed on session detail
+- **Device identification capture** — product info, software versions, and hardware ID stored per-session
 - **Re-analyze** — re-run the clinical analysis engine on any session from the session detail page
 - **Configurable thresholds** — compliance hours/percentage and leak rate warning/alert levels are user-adjustable from the Settings page
 - **Backup & Restore** — one-click database backup with multiple named snapshots; one-click restore from any saved backup (no server restart required)
@@ -110,9 +110,9 @@ internal/
   config/           Environment-based configuration
   db/               SQLite connection and migrations
   edf/              EDF binary format reader
-  importer/         Import pipeline (interface + ResMed implementation)
+  importer/         Import pipeline (device-agnostic interface + per-brand implementations)
   machine/          Device detection and per-brand parsers
-    resmed/         ResMed AirSense decoder, settings, identification
+    resmed/         ResMed decoder, settings, identification
   models/           Shared data models
   service/          Business logic layer
   web/              Embedded frontend assets
