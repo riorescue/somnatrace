@@ -1,0 +1,48 @@
+version: 2
+
+before:
+  hooks:
+    # Build the frontend before any Go compilation
+    - make build-ui
+
+builds:
+  - id: somnatrace
+    main: ./cmd/somnatrace
+    binary: somnatrace
+    ldflags:
+      - -s -w
+      - -X github.com/somnatrace/somnatrace/internal/config.Version={{.Version}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64   # Windows ARM64 has limited user base; add back when needed
+
+archives:
+  - id: default
+    name_template: "somnatrace-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "somnatrace-{{ .Version }}-checksums.txt"
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

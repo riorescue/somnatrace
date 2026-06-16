@@ -23,6 +23,7 @@ type Services struct {
 	Analysis    *AnalysisService
 	Rules       *RulesService
 	AppSettings *AppSettingsService
+	Masks       *MaskService
 }
 
 // New constructs all service types wired to the given database connection.
@@ -37,5 +38,6 @@ func New(database *db.DB) *Services {
 		Analysis:    ana,
 		Rules:       &RulesService{db: database},
 		AppSettings: &AppSettingsService{db: database},
+		Masks:       &MaskService{db: database},
 	}
 }

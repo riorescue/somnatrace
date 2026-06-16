@@ -320,15 +320,20 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
             sessionEnd={sessionEnd}
             onEventClick={onEventClick}
           />
-          <div className="flex items-center gap-3 pb-1.5 -mx-1 px-1 border-b border-slate-100">
-            <span className="w-2 h-2 shrink-0" />
-            <span className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Type</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-16 text-right shrink-0">Gap</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-24 shrink-0">Time</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-12 text-right shrink-0">Dur.</span>
-            {onEventClick && <span className="w-3.5 shrink-0" />}
-          </div>
-          <div>
+          <div
+            className="max-h-80 overflow-y-auto overflow-x-hidden pr-2 print:max-h-none print:overflow-visible print:pr-0"
+            tabIndex={0}
+            role="region"
+            aria-label="Events list"
+          >
+            <div className="sticky top-0 bg-white flex items-center gap-3 pb-1.5 -mx-1 px-1 border-b border-slate-100">
+              <span className="w-2 h-2 shrink-0" />
+              <span className="flex-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Type</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-16 text-right shrink-0">Gap</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-24 shrink-0">Time</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 w-12 text-right shrink-0">Dur.</span>
+              {onEventClick && <span className="w-3.5 shrink-0" />}
+            </div>
             {visible.map((e, i) => {
               const prev = i > 0 ? visible[i - 1] : null
               const timeSinceLast = prev

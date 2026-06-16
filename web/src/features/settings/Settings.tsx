@@ -3,10 +3,10 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ClipboardList, Wind, CheckCircle } from 'lucide-react'
+import { ClipboardList, Layers, Wind, CheckCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
-import type { AppSettings } from '@/types'
+import type { AppSettings, Mask } from '@/types'
 
 function ComplianceSettingsCard() {
   const queryClient = useQueryClient()
@@ -257,6 +257,131 @@ function LeakThresholdsCard() {
   )
 }
 
+function MaskSelect({
+  value,
+  onChange,
+  masks,
+  className,
+}: {
+  value: string
+  onChange: (v: string) => void
+  masks: Mask[]
+  className?: string
+}) {
+  const groups = new Map<string, Mask[]>()
+  const catchalls: Mask[] = []
+  for (const m of masks) {
+    if (m.is_catchall) { catchalls.push(m); continue }
+    const arr = groups.get(m.manufacturer) ?? []
+    arr.push(m)
+    groups.set(m.manufacturer, arr)
+  }
+
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className={className}
+    >
+      <option value="">— none (ask each import) —</option>
+      {[...groups.entries()].map(([mfr, mfrMasks]) => (
+        <optgroup key={mfr} label={mfr}>
+          {mfrMasks.map(m => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </optgroup>
+      ))}
+      {catchalls.length > 0 && (
+        <optgroup label="Other">
+          {catchalls.map(m => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </optgroup>
+      )}
+    </select>
+  )
+}
+
+function DefaultMaskCard() {
+  const queryClient = useQueryClient()
+
+  const { data: settings } = useQuery({
+    queryKey: ['app-settings'],
+    queryFn: api.appSettings.get,
+  })
+
+  const { data: masksData } = useQuery({
+    queryKey: ['masks'],
+    queryFn: api.masks.list,
+  })
+
+  const masks = masksData?.masks ?? []
+  const [maskID, setMaskID] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (settings) setMaskID(settings.default_mask_id ?? '')
+  }, [settings])
+
+  const mutation = useMutation({
+    mutationFn: (id: string) =>
+      api.appSettings.patch({ default_mask_id: id }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['app-settings'], updated)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    },
+  })
+
+  const isDirty = settings ? maskID !== (settings.default_mask_id ?? '') : false
+
+  return (
+    <div className="card p-5">
+      <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+        <Layers className="w-4 h-4 text-brand-500" />
+        Default Mask
+      </h2>
+      <p className="text-xs text-slate-500 mb-4">
+        This mask is pre-selected for every session during import. You can override it
+        per-session in the import review dialog, or change it later on the Session Detail page.
+      </p>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">Mask</label>
+          <MaskSelect
+            value={maskID}
+            onChange={setMaskID}
+            masks={masks}
+            className="w-full max-w-sm text-sm border border-slate-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 text-slate-700"
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Choose the mask you use most nights. It will be automatically applied when reviewing new imports.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            onClick={() => mutation.mutate(maskID)}
+            disabled={!isDirty || mutation.isPending}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {mutation.isPending ? 'Saving…' : 'Save'}
+          </button>
+          {saved && (
+            <span className="flex items-center gap-1 text-xs text-emerald-600">
+              <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" /> Saved
+            </span>
+          )}
+          {mutation.isError && (
+            <span className="text-xs text-red-600">Failed to save — try again.</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Settings() {
   return (
     <div>
@@ -265,6 +390,7 @@ export function Settings() {
         description="Configure application behavior"
       />
       <div className="space-y-6 max-w-2xl">
+        <DefaultMaskCard />
         <ComplianceSettingsCard />
         <LeakThresholdsCard />
       </div>

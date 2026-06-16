@@ -87,18 +87,35 @@ func (h *ImportsHandler) Candidates(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"sessions": candidates})
 }
 
+// Cancel handles POST /api/v1/imports/{id}/cancel. It discards an import that
+// is in pending_review state, marking it cancelled and freeing the in-memory
+// candidate slot so a new import can be started.
+func (h *ImportsHandler) Cancel(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := h.svc.Cancel(id); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
+}
+
 // Confirm handles POST /api/v1/imports/{id}/confirm. It accepts a list of
-// candidate session IDs to include and starts the persist phase asynchronously.
+// candidate session IDs to include (and optional per-session metadata) and
+// starts the persist phase asynchronously.
 func (h *ImportsHandler) Confirm(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var body struct {
-		SessionIDs []string `json:"session_ids"`
+		SessionIDs      []string                        `json:"session_ids"`
+		SessionMetadata map[string]service.SessionMeta  `json:"session_metadata,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if err := h.svc.Confirm(id, body.SessionIDs); err != nil {
+	if body.SessionMetadata == nil {
+		body.SessionMetadata = make(map[string]service.SessionMeta)
+	}
+	if err := h.svc.Confirm(id, body.SessionIDs, body.SessionMetadata); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

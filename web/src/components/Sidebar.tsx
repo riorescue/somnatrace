@@ -13,12 +13,14 @@ import {
   Stethoscope,
   FileText,
   Info,
+  ArrowLeftRight,
 } from 'lucide-react'
 
 const nav = [
   { to: '/',          label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/insights',  label: 'Insights',  icon: TrendingUp },
   { to: '/sessions',  label: 'Sessions',  icon: Moon },
+  { to: '/compare',   label: 'Compare',   icon: ArrowLeftRight },
   { to: '/rules',     label: 'Rules',     icon: Stethoscope },
   { to: '/reports',   label: 'Reports',   icon: FileText },
   { to: '/imports',   label: 'Imports',   icon: Upload },

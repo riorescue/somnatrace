@@ -13,7 +13,7 @@ import (
 )
 
 // Version is the application's semantic version string, embedded at compile time.
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 // Config holds all runtime configuration values read from the environment.
 type Config struct {

@@ -21,5 +21,8 @@ type Session struct {
 	PressureP95  float64   `json:"pressure_p95"`       // cmH₂O
 	PressureMax  float64   `json:"pressure_max"`       // cmH₂O
 	EventCount   int       `json:"event_count"`        // scored respiratory events
+	MaskID       *string   `json:"mask_id,omitempty"`      // references masks.id
+	Notes        *string   `json:"notes,omitempty"`        // user-entered session notes
+	MorningFeel  *string   `json:"morning_feel,omitempty"` // 'good' | 'fair' | 'poor' | nil
 	CreatedAt    time.Time `json:"created_at"`
 }

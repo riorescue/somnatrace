@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
 // SPDX-License-Identifier: MIT
 
-import type { AppSettings, Backup, DbStats, DetectedCard, Device, DailySummary, Event, Finding, HealthStatus, Import, InsightsData, RuleStatus, Session, SessionCandidate, SessionSignals } from '@/types'
+import type { AppSettings, Backup, DbStats, DetectedCard, Device, DailySummary, Event, Finding, HealthStatus, Import, InsightsData, Mask, RuleStatus, Session, SessionCandidate, SessionSignals } from '@/types'
 
 const BASE = '/api/v1'
 
@@ -33,8 +33,17 @@ export const api = {
       request('/imports', { method: 'POST', body: JSON.stringify(body) }),
     candidates: (id: string): Promise<{ sessions: SessionCandidate[] }> =>
       request(`/imports/${id}/candidates`),
-    confirm: (id: string, sessionIds: string[]): Promise<{ status: string }> =>
-      request(`/imports/${id}/confirm`, { method: 'POST', body: JSON.stringify({ session_ids: sessionIds }) }),
+    cancel: (id: string): Promise<{ status: string }> =>
+      request(`/imports/${id}/cancel`, { method: 'POST' }),
+    confirm: (
+      id: string,
+      sessionIds: string[],
+      sessionMetadata?: Record<string, { mask_id?: string; notes?: string; morning_feel?: string }>,
+    ): Promise<{ status: string }> =>
+      request(`/imports/${id}/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ session_ids: sessionIds, session_metadata: sessionMetadata }),
+      }),
   },
 
   sessions: {
@@ -59,6 +68,8 @@ export const api = {
       request(`/sessions/${id}/events`),
     analyze: (id: string): Promise<{ status: string }> =>
       request(`/sessions/${id}/analyze`, { method: 'POST' }),
+    patch: (id: string, body: { mask_id?: string | null; notes?: string | null; morning_feel?: string | null }): Promise<Session> =>
+      request(`/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   },
 
   summaries: {
@@ -101,7 +112,12 @@ export const api = {
   appSettings: {
     get: (): Promise<AppSettings> =>
       request('/settings'),
-    patch: (body: Partial<Pick<AppSettings, 'compliance_hours_threshold' | 'compliance_pct_threshold' | 'leak_warn_p95' | 'leak_alert_p95'>>): Promise<AppSettings> =>
+    patch: (body: Partial<Pick<AppSettings, 'compliance_hours_threshold' | 'compliance_pct_threshold' | 'leak_warn_p95' | 'leak_alert_p95' | 'default_mask_id'>>): Promise<AppSettings> =>
       request('/settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  },
+
+  masks: {
+    list: (): Promise<{ masks: Mask[] }> =>
+      request('/masks'),
   },
 }

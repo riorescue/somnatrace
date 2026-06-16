@@ -1,6 +1,17 @@
 // Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
 // SPDX-License-Identifier: MIT
 
+export type MaskType = 'full_face' | 'nasal' | 'nasal_pillow' | 'oral_nasal'
+
+export interface Mask {
+  id: string
+  manufacturer: string
+  name: string
+  mask_type: MaskType
+  is_catchall: boolean
+  sort_order: number
+}
+
 export type DeviceFamily = 'resmed' | 'unknown'
 
 export interface Device {
@@ -14,7 +25,9 @@ export interface Device {
   created_at: string
 }
 
-export type ImportStatus = 'pending' | 'running' | 'pending_review' | 'complete' | 'failed'
+export type ImportStatus = 'pending' | 'running' | 'pending_review' | 'complete' | 'failed' | 'cancelled'
+
+export type MorningFeel = 'good' | 'fair' | 'poor'
 
 export interface Import {
   id: string
@@ -43,6 +56,9 @@ export interface Session {
   pressure_p95: number
   pressure_max: number
   event_count: number
+  mask_id?: string
+  notes?: string
+  morning_feel?: MorningFeel
   created_at: string
 }
 
@@ -170,6 +186,7 @@ export interface AppSettings {
   compliance_pct_threshold: number
   leak_warn_p95: number
   leak_alert_p95: number
+  default_mask_id?: string
   // null when no sessions have been imported yet
   first_session_date: string | null
 }

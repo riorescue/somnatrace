@@ -16,6 +16,7 @@ const (
 	KeyCompliancePct   = "compliance_pct_threshold"
 	KeyLeakWarnP95     = "leak_warn_p95"
 	KeyLeakAlertP95    = "leak_alert_p95"
+	KeyDefaultMaskID   = "default_mask_id"
 )
 
 // AppSettingsService manages user-configurable application settings.
@@ -29,6 +30,7 @@ type AppSettings struct {
 	CompliancePctThreshold   float64 `json:"compliance_pct_threshold"`
 	LeakWarnP95              float64 `json:"leak_warn_p95"`
 	LeakAlertP95             float64 `json:"leak_alert_p95"`
+	DefaultMaskID            *string `json:"default_mask_id,omitempty"`
 	// FirstSessionDate is the earliest date (YYYY-MM-DD) for which a daily
 	// summary exists, or nil when no sessions have been imported yet.
 	FirstSessionDate *string `json:"first_session_date"`
@@ -59,6 +61,11 @@ func (s *AppSettingsService) Get() (*AppSettings, error) {
 	leakWarn := parseFloatOr(kv[KeyLeakWarnP95], 24.0)
 	leakAlert := parseFloatOr(kv[KeyLeakAlertP95], 40.0)
 
+	var defaultMaskID *string
+	if v := kv[KeyDefaultMaskID]; v != "" {
+		defaultMaskID = &v
+	}
+
 	// Earliest session date is derived from data, never stored as a setting.
 	var firstDate *string
 	var ns sql.NullString
@@ -71,6 +78,7 @@ func (s *AppSettingsService) Get() (*AppSettings, error) {
 		CompliancePctThreshold:   pct,
 		LeakWarnP95:              leakWarn,
 		LeakAlertP95:             leakAlert,
+		DefaultMaskID:            defaultMaskID,
 		FirstSessionDate:         firstDate,
 	}, nil
 }
@@ -88,6 +96,24 @@ func (s *AppSettingsService) SetFloat(key string, value float64) error {
 		VALUES (?, ?, datetime('now'))
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
 	`, key, strconv.FormatFloat(value, 'f', -1, 64))
+	if err != nil {
+		return fmt.Errorf("upsert app_settings %q: %w", key, err)
+	}
+	return nil
+}
+
+// SetString persists a named string setting. Only recognised keys are accepted.
+func (s *AppSettingsService) SetString(key, value string) error {
+	switch key {
+	case KeyDefaultMaskID:
+	default:
+		return fmt.Errorf("unknown setting key: %q", key)
+	}
+	_, err := s.db.Exec(`
+		INSERT INTO app_settings (key, value, updated_at)
+		VALUES (?, ?, datetime('now'))
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+	`, key, value)
 	if err != nil {
 		return fmt.Errorf("upsert app_settings %q: %w", key, err)
 	}

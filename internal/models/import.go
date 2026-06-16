@@ -14,6 +14,7 @@ const (
 	ImportStatusPendingReview ImportStatus = "pending_review" // parsed; awaiting session selection
 	ImportStatusComplete      ImportStatus = "complete"       // all selected sessions stored successfully
 	ImportStatusFailed        ImportStatus = "failed"         // importer encountered a fatal error
+	ImportStatusCancelled     ImportStatus = "cancelled"      // user discarded the import during review
 )
 
 // Import records a single SD-card import operation, including its source path,

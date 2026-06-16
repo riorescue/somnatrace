@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import { useQuery } from '@tanstack/react-query'
-import { Server, Database, Cpu, Shield, CheckCircle2, Accessibility } from 'lucide-react'
+import { Server, Database, Cpu, Shield, CheckCircle2, Accessibility, TriangleAlert } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
 import { FullPageSpinner } from '@/components/LoadingSpinner'
@@ -129,6 +129,32 @@ export function About() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Medical disclaimer */}
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-5">
+          <h2 className="text-sm font-semibold text-amber-900 mb-3 flex items-center gap-2">
+            <TriangleAlert className="w-4 h-4 text-amber-600 shrink-0" aria-hidden="true" />
+            Not Medical Advice
+          </h2>
+          <p className="text-sm text-amber-900 font-medium mb-2">
+            SomnaTrace is a personal data viewer, not a medical device or clinical tool.
+          </p>
+          <p className="text-sm text-amber-800 mb-2">
+            The information displayed — including AHI, leak rates, pressure statistics, compliance
+            figures, and all derived metrics — is for <strong>informational and personal tracking
+            purposes only</strong>. It does not constitute medical advice, diagnosis, or treatment
+            recommendations of any kind.
+          </p>
+          <p className="text-sm text-amber-800 mb-2">
+            Do not use this application to make decisions about your therapy, equipment, or health
+            without first consulting a qualified healthcare provider. PAP therapy settings should only
+            be adjusted under the direction of a licensed clinician.
+          </p>
+          <p className="text-sm text-amber-800">
+            If you have questions or concerns about your sleep therapy, contact your prescribing
+            physician or a board-certified sleep medicine specialist.
+          </p>
         </div>
 
         {/* Privacy */}

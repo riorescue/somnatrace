@@ -4,6 +4,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -169,6 +170,40 @@ func (h *SessionsHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 		events = make([]models.Event, 0)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"events": events})
+}
+
+// Patch handles PATCH /api/v1/sessions/{id}. It updates the user-editable
+// metadata fields (mask_id, notes) for a session. Only fields present in the
+// request body are updated.
+func (h *SessionsHandler) Patch(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeError(w, http.StatusBadRequest, "missing session id")
+		return
+	}
+	var body struct {
+		MaskID      *string `json:"mask_id"`
+		Notes       *string `json:"notes"`
+		MorningFeel *string `json:"morning_feel"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := h.svc.PatchMetadata(id, service.SessionPatch{
+		MaskID:      body.MaskID,
+		Notes:       body.Notes,
+		MorningFeel: body.MorningFeel,
+	}); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update session")
+		return
+	}
+	sess, err := h.svc.Get(id)
+	if err != nil || sess == nil {
+		writeError(w, http.StatusInternalServerError, "failed to read updated session")
+		return
+	}
+	writeJSON(w, http.StatusOK, sess)
 }
 
 // Reanalyze handles POST /api/v1/sessions/{id}/analyze. It re-runs all

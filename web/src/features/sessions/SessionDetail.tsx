@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: MIT
 
 import { useParams, Link } from 'react-router-dom'
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Moon, Activity, Gauge, Wind, TrendingUp,
   Info, X, Maximize2, SlidersHorizontal, Cpu, Printer,
-  Volume2, Square, Loader2, ZoomOut, MousePointer2,
+  Volume2, Square, Loader2, ZoomOut, MousePointer2, Pencil,
+  Smile, Meh, Frown,
 } from 'lucide-react'
 import {
   LineChart, Line, AreaChart, Area,
@@ -16,13 +17,169 @@ import {
 } from 'recharts'
 import { api } from '@/lib/api'
 import { formatDate, formatTime, formatDuration, formatAHI, ahiLabel } from '@/lib/format'
+import type { Event, Finding, Mask, MorningFeel, Session, SignalPoint } from '@/types'
 import { PageHeader } from '@/components/PageHeader'
 import { StatCard } from '@/components/StatCard'
 import { FullPageSpinner } from '@/components/LoadingSpinner'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { FindingsCard } from './FindingsCard'
 import { EventsCard } from './EventsCard'
-import type { Event, Finding, SignalPoint } from '@/types'
+
+// ─── Session meta edit modal ──────────────────────────────────────────────────
+
+function MaskSelect({
+  value, onChange, masks,
+}: {
+  value: string
+  onChange: (v: string) => void
+  masks: Mask[]
+}) {
+  const groups = new Map<string, Mask[]>()
+  const catchalls: Mask[] = []
+  for (const m of masks) {
+    if (m.is_catchall) { catchalls.push(m); continue }
+    const arr = groups.get(m.manufacturer) ?? []
+    arr.push(m)
+    groups.set(m.manufacturer, arr)
+  }
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 text-slate-700"
+    >
+      <option value="">— none —</option>
+      {[...groups.entries()].map(([mfr, mfrMasks]) => (
+        <optgroup key={mfr} label={mfr}>
+          {mfrMasks.map(m => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </optgroup>
+      ))}
+      {catchalls.length > 0 && (
+        <optgroup label="Other">
+          {catchalls.map(m => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </optgroup>
+      )}
+    </select>
+  )
+}
+
+const FEEL_OPTIONS: { value: MorningFeel; Icon: React.ElementType; label: string; activeClass: string; bgClass: string }[] = [
+  { value: 'good', Icon: Smile, label: 'Good', activeClass: 'text-emerald-600 border-emerald-400 bg-emerald-50', bgClass: 'bg-emerald-100 text-emerald-700' },
+  { value: 'fair', Icon: Meh,   label: 'Fair', activeClass: 'text-amber-600  border-amber-400  bg-amber-50',  bgClass: 'bg-amber-100  text-amber-700'  },
+  { value: 'poor', Icon: Frown, label: 'Poor', activeClass: 'text-red-600    border-red-400    bg-red-50',    bgClass: 'bg-red-100    text-red-700'    },
+]
+
+function MorningFeelPicker({
+  value, onChange,
+}: {
+  value: MorningFeel | ''
+  onChange: (v: MorningFeel | '') => void
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {FEEL_OPTIONS.map(({ value: v, Icon, label, activeClass }) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(value === v ? '' : v)}
+          aria-pressed={value === v}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+            value === v ? activeClass : 'text-slate-400 border-slate-200 hover:text-slate-600 hover:border-slate-300'
+          }`}
+        >
+          <Icon className="w-4 h-4" aria-hidden="true" />
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function SessionMetaEditModal({
+  session, masks, onClose,
+}: {
+  session: Session
+  masks: Mask[]
+  onClose: () => void
+}) {
+  const qc = useQueryClient()
+  const [maskID,      setMaskID]      = useState(session.mask_id      ?? '')
+  const [notes,       setNotes]       = useState(session.notes        ?? '')
+  const [morningFeel, setMorningFeel] = useState<MorningFeel | ''>(session.morning_feel ?? '')
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.sessions.patch(session.id, {
+        mask_id:      maskID || null,
+        notes:        notes.trim() || null,
+        morning_feel: morningFeel || null,
+      }),
+    onSuccess: (updated) => {
+      qc.setQueryData(['session', session.id], updated)
+      onClose()
+    },
+  })
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h3 className="font-semibold text-slate-800">Edit Session Details</h3>
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-2">Morning Feel</label>
+            <MorningFeelPicker value={morningFeel} onChange={setMorningFeel} />
+            <p className="text-xs text-slate-400 mt-1.5">How did you feel upon waking after this session?</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Mask</label>
+            <MaskSelect value={maskID} onChange={setMaskID} masks={masks} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Notes</label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={4}
+              placeholder="Any notes about this session…"
+              className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 text-slate-700 resize-none"
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-100 bg-slate-50">
+          <button className="btn-ghost" onClick={onClose} disabled={mutation.isPending}>Cancel</button>
+          <button
+            className="btn-primary"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Saving…</> : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -52,6 +209,18 @@ function niceTicks(data: SignalPoint[]): number[] {
   return ticks
 }
 
+function pct(vals: number[], p: number): number {
+  if (vals.length === 0) return 0
+  const sorted = [...vals].sort((a, b) => a - b)
+  const idx = (p / 100) * (sorted.length - 1)
+  const lo = Math.floor(idx)
+  const hi = Math.ceil(idx)
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo)
+}
+
+const arrMin = (vals: number[]) => vals.reduce((m, v) => (v < m ? v : m), vals[0] ?? 0)
+const arrMax = (vals: number[]) => vals.reduce((m, v) => (v > m ? v : m), vals[0] ?? 0)
+
 // ─── Signal chart ────────────────────────────────────────────────────────────
 
 interface RefLine {
@@ -59,6 +228,12 @@ interface RefLine {
   stroke: string
   dash?: string
   label?: string
+}
+
+interface ChartStat {
+  label: string
+  value: string
+  warn?: boolean
 }
 
 interface SignalChartProps {
@@ -459,11 +634,13 @@ function FlowWaveformCard({
   startTime,
   zoomDomain,
   onViewChange,
+  stats,
 }: {
   flowData: SignalPoint[]
   startTime: string
   zoomDomain: [number, number] | null
   onViewChange: (range: { startSec: number; endSec: number } | null) => void
+  stats?: ChartStat[]
 }) {
   const [playbackT, setPlaybackT] = useState<number | null>(null)
 
@@ -482,6 +659,7 @@ function FlowWaveformCard({
           onPlaybackTime={setPlaybackT}
         />
       }
+      stats={stats}
       refLegend={[
         { y:  0.8, stroke: '#10b981', dash: '3 3', label: '0.8 L/s — normal peak inspiratory' },
         { y: -0.8, stroke: '#10b981', dash: '3 3', label: '-0.8 L/s — normal peak expiratory' },
@@ -516,11 +694,12 @@ interface ChartCardProps {
   icon: React.ReactNode
   info: ChartInfo
   refLegend?: RefLine[]
+  stats?: ChartStat[]
   render: (height: number) => React.ReactNode
   extraActions?: React.ReactNode
 }
 
-function ChartCard({ title, subtitle, icon, info, refLegend, render, extraActions }: ChartCardProps) {
+function ChartCard({ title, subtitle, icon, info, refLegend, stats, render, extraActions }: ChartCardProps) {
   const [mode, setMode] = useState<'none' | 'info' | 'expand'>('none')
   const close = useCallback(() => setMode('none'), [])
 
@@ -561,27 +740,41 @@ function ChartCard({ title, subtitle, icon, info, refLegend, render, extraAction
         </div>
       </div>
 
-      {/* Reference line legend */}
-      {refLegend && refLegend.some(rl => rl.label) && (
-        <div className="flex items-center flex-wrap gap-x-5 gap-y-1 mb-2 px-1">
-          {refLegend.filter(rl => rl.label).map((rl, i) => (
-            <div key={i} className="flex items-center gap-1.5">
-              <svg width="16" height="10" className="shrink-0">
-                <line x1="0" y1="5" x2="16" y2="5"
-                  stroke={rl.stroke}
-                  strokeDasharray={rl.dash ?? '4 4'}
-                  strokeWidth="1.5" />
-              </svg>
-              <span className="text-xs font-mono font-medium" style={{ color: rl.stroke }}>
-                {rl.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Normal-size chart */}
       {render(130)}
+
+      {/* Chart footer: computed stats + reference line legend */}
+      {(stats?.length || refLegend?.some(rl => rl.label)) && (
+        <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-1.5">
+          {stats?.length ? (
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              {stats.map((s, i) => (
+                <span key={i} className="text-[11px] text-slate-400">
+                  {s.label}
+                  <span className={`font-mono font-semibold ml-1 ${s.warn ? 'text-amber-600' : 'text-slate-600'}`}>
+                    {s.value}
+                  </span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {refLegend?.some(rl => rl.label) ? (
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              {refLegend.filter(rl => rl.label).map((rl, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <svg width="14" height="8" className="shrink-0">
+                    <line x1="0" y1="4" x2="14" y2="4"
+                      stroke={rl.stroke}
+                      strokeDasharray={rl.dash ?? '4 4'}
+                      strokeWidth="1.5" />
+                  </svg>
+                  <span className="text-[11px]" style={{ color: rl.stroke }}>{rl.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* Modals */}
       {mode !== 'none' && (
@@ -605,24 +798,38 @@ function ChartCard({ title, subtitle, icon, info, refLegend, render, extraAction
                 </button>
               </div>
               <div className="p-5">
-                {refLegend && refLegend.some(rl => rl.label) && (
-                  <div className="flex items-center flex-wrap gap-x-5 gap-y-1 mb-3 px-1">
-                    {refLegend.filter(rl => rl.label).map((rl, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <svg width="16" height="10" className="shrink-0">
-                          <line x1="0" y1="5" x2="16" y2="5"
-                            stroke={rl.stroke}
-                            strokeDasharray={rl.dash ?? '4 4'}
-                            strokeWidth="1.5" />
-                        </svg>
-                        <span className="text-xs font-mono font-medium" style={{ color: rl.stroke }}>
-                          {rl.label}
-                        </span>
+                {render(360)}
+                {(stats?.length || refLegend?.some(rl => rl.label)) && (
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1.5">
+                    {stats?.length ? (
+                      <div className="flex flex-wrap gap-x-5 gap-y-1">
+                        {stats.map((s, i) => (
+                          <span key={i} className="text-[11px] text-slate-400">
+                            {s.label}
+                            <span className={`font-mono font-semibold ml-1 ${s.warn ? 'text-amber-600' : 'text-slate-600'}`}>
+                              {s.value}
+                            </span>
+                          </span>
+                        ))}
                       </div>
-                    ))}
+                    ) : null}
+                    {refLegend?.some(rl => rl.label) ? (
+                      <div className="flex flex-wrap gap-x-5 gap-y-1">
+                        {refLegend.filter(rl => rl.label).map((rl, i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <svg width="14" height="8" className="shrink-0">
+                              <line x1="0" y1="4" x2="14" y2="4"
+                                stroke={rl.stroke}
+                                strokeDasharray={rl.dash ?? '4 4'}
+                                strokeWidth="1.5" />
+                            </svg>
+                            <span className="text-[11px]" style={{ color: rl.stroke }}>{rl.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 )}
-                {render(360)}
               </div>
             </div>
           ) : (
@@ -852,9 +1059,17 @@ function DeviceIdentificationCard({ payload }: { payload: Record<string, unknown
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+const MASK_TYPE_LABEL: Record<string, string> = {
+  full_face: 'Full Face',
+  nasal: 'Nasal',
+  nasal_pillow: 'Nasal Pillow',
+  oral_nasal: 'Oral-Nasal',
+}
+
 export function SessionDetail() {
   const { id } = useParams<{ id: string }>()
   const [sharedZoom, setSharedZoom] = useState<[number, number] | null>(null)
+  const [editingMeta, setEditingMeta] = useState(false)
   const chartsRef = useRef<HTMLDivElement>(null)
 
   const handleZoom = useCallback(
@@ -935,7 +1150,47 @@ export function SessionDetail() {
     queryFn: api.appSettings.get,
   })
 
+  const { data: masksData } = useQuery({
+    queryKey: ['masks'],
+    queryFn: api.masks.list,
+  })
+
+  const masks = masksData?.masks ?? []
   const warnP95 = appSettings?.leak_warn_p95 ?? 24
+
+  const signalStats = useMemo(() => {
+    if (!signals) return null
+    const clip = (pts: SignalPoint[]) =>
+      sharedZoom ? pts.filter(p => p.t >= sharedZoom[0] && p.t <= sharedZoom[1]) : pts
+    const pressureVals = clip(signals.pressure).map(p => p.v)
+    const flowVals     = clip(signals.flow).map(p => p.v)
+    const rrVals       = clip(signals.resp_rate).map(p => p.v)
+    const leakVals     = clip(signals.leak).map(p => p.v)
+    return {
+      pressure: pressureVals.length ? [
+        { label: 'Min', value: `${arrMin(pressureVals).toFixed(1)} cmH₂O` },
+        { label: 'P50', value: `${pct(pressureVals, 50).toFixed(1)} cmH₂O` },
+        { label: 'P95', value: `${pct(pressureVals, 95).toFixed(1)} cmH₂O` },
+        { label: 'Max', value: `${arrMax(pressureVals).toFixed(1)} cmH₂O` },
+      ] as ChartStat[] : undefined,
+      flow: flowVals.length ? [
+        { label: 'Peak insp', value: `${arrMax(flowVals).toFixed(2)} L/s` },
+        { label: 'P50',       value: `${pct(flowVals, 50).toFixed(2)} L/s` },
+        { label: 'Peak exp',  value: `${arrMin(flowVals).toFixed(2)} L/s` },
+      ] as ChartStat[] : undefined,
+      resp_rate: rrVals.length ? [
+        { label: 'Min',    value: `${arrMin(rrVals).toFixed(1)} br/min` },
+        { label: 'Median', value: `${pct(rrVals, 50).toFixed(1)} br/min` },
+        { label: 'P95',    value: `${pct(rrVals, 95).toFixed(1)} br/min` },
+        { label: 'Max',    value: `${arrMax(rrVals).toFixed(1)} br/min` },
+      ] as ChartStat[] : undefined,
+      leak: leakVals.length ? [
+        { label: 'Median', value: `${pct(leakVals, 50).toFixed(1)} L/min` },
+        { label: 'P95',    value: `${pct(leakVals, 95).toFixed(1)} L/min`, warn: pct(leakVals, 95) >= warnP95 },
+        { label: 'Max',    value: `${arrMax(leakVals).toFixed(1)} L/min`, warn: arrMax(leakVals) >= warnP95 },
+      ] as ChartStat[] : undefined,
+    }
+  }, [signals, sharedZoom, warnP95])
 
   if (isLoading) return <FullPageSpinner />
   if (isError) return <ErrorBanner message="Failed to load session." />
@@ -993,21 +1248,54 @@ export function SessionDetail() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <StatCard label="AHI" value={formatAHI(sess.ahi)} sub={label} accent={color} />
         <StatCard
-          label="Events/hr"
-          value={sess.event_count > 0
-            ? (sess.event_count / (sess.duration_minutes / 60)).toFixed(1)
-            : '—'}
-          sub={`${sess.event_count} total`}
+          label="AHI"
+          value={formatAHI(sess.ahi)}
+          sub={label}
+          accent={color}
+          info="Apnea-Hypopnea Index reported directly by your device — pre-calculated by the device firmware. Counts obstructive apneas, central apneas, and hypopneas per hour of therapy. SomnaTrace does not modify this value."
         />
-        <StatCard label="Duration" value={formatDuration(sess.duration_minutes)} sub="therapy time" />
+        <StatCard
+          label="Duration"
+          value={formatDuration(sess.duration_minutes)}
+          sub="therapy time"
+          info="Total mask-on time for this session, derived from the start and end timestamps in STR.edf. Short sessions under 4 hours may not represent a full night of therapy."
+        />
         <StatCard
           label="Pressure P95"
           value={`${sess.pressure_p95.toFixed(1)} cmH₂O`}
           sub={`P50: ${sess.pressure_p50.toFixed(1)}`}
+          info="95th-percentile mask pressure from the 2-second sampled pressure signal in the session EDF. 95% of therapy time was spent at or below this value. The sub-label shows the median (P50). Sustained high P95 can indicate positional obstruction or pressure limits that need adjustment."
         />
-        <StatCard label="Leak Rate" value={`${sess.leak_rate_median.toFixed(1)} L/min`} sub="median" />
+        <StatCard
+          label="Leak Rate"
+          value={`${sess.leak_rate_median.toFixed(1)} L/min`}
+          sub="median"
+          info="Median total mask exit flow from the 2-second sampled leak signal. Includes intentional vent flow (~20–30 L/min baseline) plus unintentional seal leakage. Values well above your baseline suggest mask seal loss during the session."
+        />
+        {(() => {
+          const feelOpt = FEEL_OPTIONS.find(f => f.value === sess.morning_feel)
+          const feelColor: Record<string, string> = {
+            good: 'text-emerald-500',
+            fair: 'text-amber-500',
+            poor: 'text-red-500',
+          }
+          return (
+            <StatCard
+              label="Morning Feel"
+              value={feelOpt ? (
+                <span className={`flex items-center gap-2 ${feelColor[feelOpt.value]}`}>
+                  <feelOpt.Icon className="w-7 h-7" aria-hidden="true" />
+                  <span className="text-xl">{feelOpt.label}</span>
+                </span>
+              ) : (
+                <span className="text-slate-300">—</span>
+              )}
+              sub={feelOpt ? 'on waking' : 'not logged'}
+              info="How you felt upon waking after this session. Log it by tapping Edit in the Session Metadata section below. Helps you correlate therapy quality with how you actually feel day to day."
+            />
+          )
+        })()}
       </div>
 
       {/* Charts */}
@@ -1033,6 +1321,7 @@ export function SessionDetail() {
                 title="Mask Pressure" subtitle="cmH₂O · 2 s"
                 icon={<Gauge className="w-4 h-4" />}
                 info={CHART_INFO.pressure}
+                stats={signalStats?.pressure}
                 refLegend={[
                   { y: 10, stroke: '#f59e0b', dash: '4 4', label: '10 cmH₂O — AASM p95 target' },
                   { y: 15, stroke: '#ef4444', dash: '4 4', label: '15 cmH₂O — elevated' },
@@ -1059,6 +1348,7 @@ export function SessionDetail() {
                 startTime={sess.start_time}
                 zoomDomain={sharedZoom}
                 onViewChange={handleZoom}
+                stats={signalStats?.flow}
               />
             </div>
           )}
@@ -1070,6 +1360,7 @@ export function SessionDetail() {
                   title="Respiratory Rate" subtitle="br/min · 2 s"
                   icon={<Activity className="w-4 h-4" />}
                   info={CHART_INFO.resp_rate}
+                  stats={signalStats?.resp_rate}
                   refLegend={[
                     { y: 12, stroke: '#10b981', dash: '3 3', label: '12 br/min — lower normal' },
                     { y: 20, stroke: '#10b981', dash: '3 3', label: '20 br/min — upper normal' },
@@ -1095,6 +1386,7 @@ export function SessionDetail() {
                     ...CHART_INFO.leak,
                     range: `Intentional vent flow is typically 20–30 L/min. Large Leak is unintentional leak >${warnP95} L/min.`,
                   }}
+                  stats={signalStats?.leak}
                   refLegend={[
                     { y: warnP95, stroke: '#ef4444', dash: '4 4', label: `${warnP95} L/min — large leak threshold` },
                   ]}
@@ -1141,10 +1433,62 @@ export function SessionDetail() {
 
       {/* Metadata */}
       <div className="card p-5 mb-4">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-          <Moon className="w-4 h-4 text-brand-500" />
-          Session Metadata
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <Moon className="w-4 h-4 text-brand-500" />
+            Session Metadata
+          </h2>
+          <button
+            onClick={() => setEditingMeta(true)}
+            className="no-print flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-500 transition-colors"
+            title="Edit session details"
+          >
+            <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+            Edit
+          </button>
+        </div>
+
+        {/* Morning feel + mask + notes — shown first when any are present */}
+        {(sess.morning_feel || sess.mask_id || sess.notes) && (() => {
+          const mask = masks.find(m => m.id === sess.mask_id)
+          const feelOpt = FEEL_OPTIONS.find(f => f.value === sess.morning_feel)
+          return (
+            <div className="mb-4 pb-4 border-b border-slate-100 space-y-2">
+              {feelOpt && (() => {
+                const { Icon, label, bgClass } = feelOpt
+                return (
+                  <div className="flex gap-2 text-sm items-center">
+                    <dt className="text-slate-500 shrink-0 w-32">Morning Feel</dt>
+                    <dd>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${bgClass}`}>
+                        <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+                        {label}
+                      </span>
+                    </dd>
+                  </div>
+                )
+              })()}
+              {mask && (
+                <div className="flex gap-2 text-sm">
+                  <dt className="text-slate-500 shrink-0 w-32">Mask</dt>
+                  <dd className="text-slate-800">
+                    {mask.name}
+                    <span className="ml-2 text-xs text-slate-400">
+                      {mask.manufacturer} · {MASK_TYPE_LABEL[mask.mask_type] ?? mask.mask_type}
+                    </span>
+                  </dd>
+                </div>
+              )}
+              {sess.notes && (
+                <div className="flex gap-2 text-sm">
+                  <dt className="text-slate-500 shrink-0 w-32">Notes</dt>
+                  <dd className="text-slate-700 whitespace-pre-wrap">{sess.notes}</dd>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
         <dl className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
           {([
             ['Session ID', sess.id],
@@ -1161,6 +1505,14 @@ export function SessionDetail() {
           ))}
         </dl>
       </div>
+
+      {editingMeta && (
+        <SessionMetaEditModal
+          session={sess}
+          masks={masks}
+          onClose={() => setEditingMeta(false)}
+        />
+      )}
 
       {/* Device identification */}
       {deviceIdentification && <DeviceIdentificationCard payload={deviceIdentification} />}

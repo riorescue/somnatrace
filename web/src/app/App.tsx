@@ -13,6 +13,7 @@ import { Utilities } from '@/features/utilities/Utilities'
 import { Rules } from '@/features/rules/Rules'
 import { Reports } from '@/features/reports/Reports'
 import { About } from '@/features/about/About'
+import { Compare } from '@/features/compare/Compare'
 
 export function App() {
   return (
@@ -33,6 +34,7 @@ export function App() {
             <Route path="/insights"        element={<Insights />} />
             <Route path="/sessions"        element={<SessionsList />} />
             <Route path="/sessions/:id"    element={<SessionDetail />} />
+            <Route path="/compare"         element={<Compare />} />
             <Route path="/rules"           element={<Rules />} />
             <Route path="/reports"         element={<Navigate to="/reports/compliance" replace />} />
             <Route path="/reports/:report" element={<Reports />} />

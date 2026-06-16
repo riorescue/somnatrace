@@ -37,6 +37,14 @@ type SessionCandidate struct {
 	AlreadyImported bool      `json:"already_imported"`
 }
 
+// SessionMeta holds optional per-session metadata supplied by the user at
+// confirm time (mask selection, free-text notes, and morning feel rating).
+type SessionMeta struct {
+	MaskID      *string `json:"mask_id,omitempty"`
+	Notes       *string `json:"notes,omitempty"`
+	MorningFeel *string `json:"morning_feel,omitempty"`
+}
+
 // pendingImport holds the parsed importer result between the parse phase and
 // the user-confirmed persist phase. It is stored in ImportService.pending,
 // keyed by import ID, and discarded once the import is confirmed or failed.
@@ -227,9 +235,10 @@ func (s *ImportService) Candidates(importID string) ([]SessionCandidate, error) 
 }
 
 // Confirm starts the persist phase for the given import, writing only the
-// sessions whose IDs appear in selectedIDs to the database. It returns
+// sessions whose IDs appear in selectedIDs to the database. meta carries
+// optional per-session mask and notes supplied by the user. It returns
 // immediately; the actual persistence runs in a background goroutine.
-func (s *ImportService) Confirm(importID string, selectedIDs []string) error {
+func (s *ImportService) Confirm(importID string, selectedIDs []string, meta map[string]SessionMeta) error {
 	val, ok := s.pending.Load(importID)
 	if !ok {
 		return fmt.Errorf("no pending candidates for import %s", importID)
@@ -246,7 +255,7 @@ func (s *ImportService) Confirm(importID string, selectedIDs []string) error {
 
 	go func() {
 		ctx := context.Background()
-		if err := s.persistImport(ctx, importID, pi, selectedSet); err != nil {
+		if err := s.persistImport(ctx, importID, pi, selectedSet, meta); err != nil {
 			log.Printf("confirm import %s failed: %v", importID, err)
 			s.failImport(importID, err.Error())
 		}
@@ -257,7 +266,7 @@ func (s *ImportService) Confirm(importID string, selectedIDs []string) error {
 // persistImport is the persist phase: it writes the selected sessions and all
 // related records (signals, events, settings, summaries) to the database, then
 // marks the import complete.
-func (s *ImportService) persistImport(ctx context.Context, importID string, pi *pendingImport, selectedSet map[string]bool) error {
+func (s *ImportService) persistImport(ctx context.Context, importID string, pi *pendingImport, selectedSet map[string]bool, meta map[string]SessionMeta) error {
 	if err := s.setImportStatus(importID, models.ImportStatusRunning, "", 0); err != nil {
 		return err
 	}
@@ -270,11 +279,18 @@ func (s *ImportService) persistImport(ctx context.Context, importID string, pi *
 
 	var count int
 	for i := range result.Sessions {
-		if !selectedSet[pi.candidateIDs[i]] {
+		candidateID := pi.candidateIDs[i]
+		if !selectedSet[candidateID] {
 			continue
 		}
 		sr := &result.Sessions[i]
 		sr.Session.ImportID = importID
+
+		if m, ok := meta[candidateID]; ok {
+			sr.Session.MaskID = m.MaskID
+			sr.Session.Notes = m.Notes
+			sr.Session.MorningFeel = m.MorningFeel
+		}
 
 		sessionID, err := s.insertSession(sr.Session)
 		if err != nil {
@@ -452,13 +468,15 @@ func (s *ImportService) insertSession(sess models.Session) (string, error) {
 		INSERT INTO sessions
 		  (id, device_id, import_id, start_time, end_time,
 		   duration_minutes, ahi, leak_rate_median,
-		   pressure_p50, pressure_p95, pressure_max, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		   pressure_p50, pressure_p95, pressure_max,
+		   mask_id, notes, morning_feel, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		id, sess.DeviceID, sess.ImportID,
 		sess.StartTime.UTC(), sess.EndTime.UTC(),
 		sess.DurationMin, sess.AHI, sess.LeakRate,
 		sess.PressureP50, sess.PressureP95, sess.PressureMax,
+		sess.MaskID, sess.Notes, sess.MorningFeel,
 		time.Now().UTC(),
 	)
 	if err != nil {
@@ -497,6 +515,26 @@ func (s *ImportService) upsertSummary(sum models.DailySummary) error {
 		time.Now().UTC(),
 	)
 	return err
+}
+
+// Cancel marks a pending_review import as cancelled and discards its in-memory
+// candidates. Returns an error if the import is not in pending_review state.
+func (s *ImportService) Cancel(importID string) error {
+	s.pending.Delete(importID)
+	now := time.Now().UTC()
+	res, err := s.db.Exec(`
+		UPDATE imports
+		SET status = 'cancelled', completed_at = ?, error_message = 'Discarded by user'
+		WHERE id = ? AND status = 'pending_review'
+	`, now, importID)
+	if err != nil {
+		return fmt.Errorf("cancel import %s: %w", importID, err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("import %s is not awaiting review", importID)
+	}
+	return nil
 }
 
 // storeEvents inserts all scored respiratory events for a session.

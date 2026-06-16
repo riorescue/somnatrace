@@ -39,6 +39,7 @@ func (h *AppSettingsHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		CompliancePctThreshold   *float64 `json:"compliance_pct_threshold"`
 		LeakWarnP95              *float64 `json:"leak_warn_p95"`
 		LeakAlertP95             *float64 `json:"leak_alert_p95"`
+		DefaultMaskID            *string  `json:"default_mask_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -89,6 +90,13 @@ func (h *AppSettingsHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := h.svc.SetFloat(service.KeyLeakAlertP95, v); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to save leak alert threshold")
+			return
+		}
+	}
+
+	if body.DefaultMaskID != nil {
+		if err := h.svc.SetString(service.KeyDefaultMaskID, *body.DefaultMaskID); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to save default mask")
 			return
 		}
 	}

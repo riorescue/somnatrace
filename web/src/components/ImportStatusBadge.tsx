@@ -9,6 +9,7 @@ const map: Record<ImportStatus, string> = {
   pending_review: 'badge-warning',
   complete:       'badge-success',
   failed:         'badge-error',
+  cancelled:      'badge-neutral',
 }
 
 const labels: Record<ImportStatus, string> = {
@@ -17,6 +18,7 @@ const labels: Record<ImportStatus, string> = {
   pending_review: 'Review Needed',
   complete:       'Complete',
   failed:         'Failed',
+  cancelled:      'Cancelled',
 }
 
 export function ImportStatusBadge({ status }: { status: ImportStatus }) {
