@@ -831,7 +831,7 @@ function DeviceIdentificationCard({ payload }: { payload: Record<string, unknown
         Device Identification
         <span className="text-xs font-normal text-slate-500 ml-1">as captured at import time</span>
       </h2>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[repeat(3,minmax(max-content,1fr))] gap-6">
         {groups.map(g => (
           <div key={g.title}>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{g.title}</p>
@@ -1148,10 +1148,10 @@ export function SessionDetail() {
         <dl className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
           {([
             ['Session ID', sess.id],
-            ['Device ID', sess.device_id],
-            ['Import ID', sess.import_id],
             ['Start', `${formatDate(sess.start_time)} ${formatTime(sess.start_time)}`],
+            ['Device ID', sess.device_id],
             ['End', `${formatDate(sess.end_time)} ${formatTime(sess.end_time)}`],
+            ['Import ID', sess.import_id],
             ['Max Pressure', `${sess.pressure_max.toFixed(1)} cmH₂O`],
           ] as [string, string][]).map(([k, v]) => (
             <div key={k} className="flex gap-2">

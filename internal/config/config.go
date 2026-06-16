@@ -33,7 +33,7 @@ func Load() *Config {
 		Port:    getEnv("SOMNATRACE_PORT", "8080"),
 		DataDir: dataDir,
 		DBPath:  getEnv("SOMNATRACE_DB_PATH", filepath.Join(dataDir, "somnatrace.db")),
-		Mode:    getEnv("SOMNATRACE_MODE", "development"),
+		Mode:    getEnv("SOMNATRACE_MODE", "production"),
 	}
 }
 

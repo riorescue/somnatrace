@@ -91,10 +91,12 @@ export interface DbStats {
     session_signals: number
   }
   size_bytes: number
+  schema_version: string
 }
 
 export interface DetectedCard {
   path: string
+  family: string
 }
 
 export interface SessionCandidate {
@@ -176,4 +178,5 @@ export interface Backup {
   id: string
   created_at: string
   size_bytes: number
+  schema_version: string
 }

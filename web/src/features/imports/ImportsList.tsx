@@ -12,9 +12,13 @@ import { ErrorBanner } from '@/components/ErrorBanner'
 import { ImportStatusBadge } from '@/components/ImportStatusBadge'
 import { SessionReviewModal } from './SessionReviewModal'
 
+function deviceFamilyLabel(family: string): string {
+  if (family === 'resmed') return 'ResMed'
+  return family
+}
+
 export function ImportsList() {
   const qc = useQueryClient()
-  const [showForm, setShowForm] = useState(false)
   const [sourcePath, setSourcePath] = useState('')
   const [sourceName, setSourceName] = useState('')
   const [formError, setFormError] = useState('')
@@ -37,7 +41,6 @@ export function ImportsList() {
     mutationFn: api.imports.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['imports'] })
-      setShowForm(false)
       setSourcePath('')
       setSourceName('')
       setFormError('')
@@ -53,7 +56,6 @@ export function ImportsList() {
 
   function selectCard(path: string) {
     setSourcePath(path)
-    setShowForm(true)
     const parts = path.split('/')
     const label = parts[parts.length - 1] || path
     setSourceName(label)
@@ -63,28 +65,24 @@ export function ImportsList() {
   if (isLoading) return <FullPageSpinner />
   if (isError) return <ErrorBanner message="Failed to load imports." />
 
-  const imports = data?.imports ?? []
+  const allImports = data?.imports ?? []
+  const imports = allImports.slice(0, 5)
   const cards = detected?.cards ?? []
+  const hasPendingReview = allImports.some(i => i.status === 'pending_review')
 
   return (
     <div>
       <PageHeader
         title="Imports"
-        description="Manage your SD card data imports"
-        action={
-          <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
-            <Upload className="w-4 h-4" aria-hidden="true" />
-            New Import
-          </button>
-        }
+        description="Manage your device data imports"
       />
 
-      {/* Detected SD cards */}
+      {/* Detected storage media */}
       <div className="card p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
             <MemoryStick className="w-4 h-4 text-brand-500" aria-hidden="true" />
-            Detected SD Cards
+            Detected Storage Media
           </h3>
           <button
             className="btn-ghost text-xs"
@@ -100,7 +98,7 @@ export function ImportsList() {
 
         {cards.length === 0 ? (
           <p className="text-xs text-slate-500">
-            No ResMed SD cards detected. Insert your SD card and click <strong>Scan</strong>, or enter the path manually below.
+            No compatible storage media detected. Connect your device's storage media and click <strong>Scan</strong>, or enter the path manually below.
           </p>
         ) : (
           <div className="space-y-2">
@@ -120,7 +118,7 @@ export function ImportsList() {
                 </div>
                 <span className="shrink-0 text-xs font-medium text-emerald-700 bg-emerald-100 border border-emerald-200
                                  px-2 py-0.5 rounded-full">
-                  ResMed
+                  {deviceFamilyLabel(card.family)}
                 </span>
               </button>
             ))}
@@ -129,62 +127,62 @@ export function ImportsList() {
       </div>
 
       {/* New import form */}
-      {showForm && (
-        <div className="card p-5 mb-6">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <FolderOpen className="w-4 h-4 text-brand-500" aria-hidden="true" />
-            Import from local path
-          </h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="import-source-path" className="block text-xs font-medium text-slate-600 mb-1">
-                Source path{' '}
-                <span aria-hidden="true" className="text-red-500">*</span>
-                <span className="sr-only">(required)</span>
-              </label>
-              <input
-                id="import-source-path"
-                type="text"
-                value={sourcePath}
-                onChange={e => setSourcePath(e.target.value)}
-                placeholder="/Volumes/SD_CARD or /path/to/mirror"
-                aria-required="true"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none
-                           focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label htmlFor="import-display-name" className="block text-xs font-medium text-slate-600 mb-1">
-                Display name <span className="text-slate-500">(optional)</span>
-              </label>
-              <input
-                id="import-display-name"
-                type="text"
-                value={sourceName}
-                onChange={e => setSourceName(e.target.value)}
-                placeholder="e.g. SD Mirror Jan 2025"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none
-                           focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              />
-            </div>
-            {formError && <p role="alert" className="text-xs text-red-600">{formError}</p>}
-            <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={createMut.isPending}
-              >
-                {createMut.isPending
-                  ? <><RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" /> Starting…</>
-                  : <><Upload className="w-4 h-4" aria-hidden="true" /> Start Import</>}
-              </button>
-              <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <div className="card p-5 mb-6">
+        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <FolderOpen className="w-4 h-4 text-brand-500" aria-hidden="true" />
+          Import from local path
+        </h3>
+        {hasPendingReview && (
+          <p role="alert" className="mb-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            An import is awaiting session review. Complete it before starting a new one.
+          </p>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="import-source-path" className="block text-xs font-medium text-slate-600 mb-1">
+              Source path{' '}
+              <span aria-hidden="true" className="text-red-500">*</span>
+              <span className="sr-only">(required)</span>
+            </label>
+            <input
+              id="import-source-path"
+              type="text"
+              value={sourcePath}
+              onChange={e => setSourcePath(e.target.value)}
+              placeholder="/Volumes/DEVICE or /path/to/mirror"
+              aria-required="true"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none
+                         focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label htmlFor="import-display-name" className="block text-xs font-medium text-slate-600 mb-1">
+              Display name <span className="text-slate-500">(optional)</span>
+            </label>
+            <input
+              id="import-display-name"
+              type="text"
+              value={sourceName}
+              onChange={e => setSourceName(e.target.value)}
+              placeholder="e.g. Jan 2025 export"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none
+                         focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+          </div>
+          {formError && <p role="alert" className="text-xs text-red-600">{formError}</p>}
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={createMut.isPending || hasPendingReview}
+            >
+              {createMut.isPending
+                ? <><RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" /> Starting…</>
+                : <><Upload className="w-4 h-4" aria-hidden="true" /> Start Import</>}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Import list */}
       {imports.length === 0 ? (
@@ -192,7 +190,7 @@ export function ImportsList() {
           <Upload className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
           <p className="text-slate-500 text-sm">No imports yet.</p>
           <p className="text-slate-500 text-xs mt-1">
-            Click <strong>New Import</strong> to bring in your first SD card export.
+            Enter a path above to bring in your first device data export.
           </p>
         </div>
       ) : (

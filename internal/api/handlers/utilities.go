@@ -11,7 +11,7 @@ import (
 )
 
 // UtilitiesHandler serves maintenance and diagnostics endpoints: database
-// statistics, data deletion, WAL vacuum, and SD card detection.
+// statistics, data deletion, WAL vacuum, and storage media detection.
 type UtilitiesHandler struct {
 	svc *service.UtilitiesService
 }
@@ -53,9 +53,9 @@ func (h *UtilitiesHandler) Vacuum(w http.ResponseWriter, r *http.Request) {
 }
 
 // Detect handles GET /api/v1/detect and returns a list of mounted volumes that
-// look like ResMed SD cards.
+// match a known therapy device family.
 func (h *UtilitiesHandler) Detect(w http.ResponseWriter, r *http.Request) {
-	cards, err := h.svc.DetectResMedCards()
+	cards, err := h.svc.DetectCards()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "detection failed")
 		return

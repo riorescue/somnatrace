@@ -210,7 +210,7 @@ function EventRow({ event, onZoom, timeSinceLast }: { event: Event; onZoom?: () 
         {fmtDuration(event.duration_seconds)}
       </span>
       {onZoom && (
-        <ZoomIn className="w-3.5 h-3.5 text-slate-200 group-hover:text-brand-400 transition-colors shrink-0" />
+        <ZoomIn className="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-400 transition-colors shrink-0" />
       )}
     </div>
   )

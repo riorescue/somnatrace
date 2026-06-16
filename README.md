@@ -94,7 +94,7 @@ All settings are read from environment variables with sensible defaults.
 | `SOMNATRACE_PORT` | `8080` | Listen port |
 | `SOMNATRACE_DATA_DIR` | `~/.somnatrace` | Where the database and backups live |
 | `SOMNATRACE_DB_PATH` | `$DATA_DIR/somnatrace.db` | Full database path |
-| `SOMNATRACE_MODE` | `development` | `development` or `production` |
+| `SOMNATRACE_MODE` | `production` | `development` or `production` |
 
 ---
 

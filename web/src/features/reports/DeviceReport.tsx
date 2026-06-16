@@ -248,7 +248,7 @@ export function DeviceReport() {
               Area chart: nightly mask leak rate trend in L/min, showing median and P95 values per night. Reference lines indicate warning and alert thresholds.
             </figcaption>
           <ResponsiveContainer aria-hidden="true" width="100%" height={210}>
-            <AreaChart data={leakChartData} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
+            <AreaChart data={leakChartData} margin={{ top: 4, right: 20, bottom: 0, left: -8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={leakTickInterval} />
               <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={[0, 'auto']} />
@@ -291,7 +291,7 @@ export function DeviceReport() {
                 Combined chart: nightly therapy pressure delivery in cmH₂O, showing P50, P95, and max values per night.
               </figcaption>
             <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
-              <ComposedChart data={pressureChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+              <ComposedChart data={pressureChartData} margin={{ top: 4, right: 20, bottom: 0, left: -12 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={Math.max(0, Math.ceil(pressureChartData.length / 8) - 1)} />
                 <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={['auto', 'auto']} />

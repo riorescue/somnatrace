@@ -163,7 +163,7 @@ function NightCalendar({ summaries, days, firstSessionDate }: CalendarProps) {
 
   function cellColor(date: string, inRange: boolean): string {
     if (!inRange) return 'transparent'
-    if (firstSessionDate && date < firstSessionDate) return '#e0f2fe'
+    if (firstSessionDate && date < firstSessionDate) return '#bae6fd'
     const s = byDate.get(date)
     if (!s) return '#f1f5f9'
     if (s.usage_minutes === 0) return '#f1f5f9'
@@ -241,7 +241,7 @@ function NightCalendar({ summaries, days, firstSessionDate }: CalendarProps) {
       <div className="flex items-center gap-4 mt-3 flex-wrap">
         {firstSessionDate && (
           <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#e0f2fe' }} /> Before therapy
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#bae6fd' }} /> Before therapy
           </div>
         )}
         <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
@@ -504,7 +504,7 @@ export function Insights() {
               <ResponsiveContainer aria-hidden="true" width="100%" height={200}>
                 <ComposedChart
                   data={ahiChartData}
-                  margin={{ top: 4, right: 4, bottom: 0, left: -8 }}
+                  margin={{ top: 4, right: 20, bottom: 0, left: -8 }}
                   style={{ cursor: 'pointer' }}
                   onClick={(state) => {
                     const id = state?.activePayload?.[0]?.payload?.session_id
@@ -555,7 +555,7 @@ export function Insights() {
                     Bar chart: nightly CPAP usage in hours. Green bars meet the 4-hour target, amber bars are below target. Data also available in the Sessions table.
                   </figcaption>
                 <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
-                  <BarChart data={usageChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+                  <BarChart data={usageChartData} margin={{ top: 4, right: 20, bottom: 0, left: -12 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" interval={nTicks(usageChartData.length)} />
                     <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={[0, 'auto']} />
@@ -591,7 +591,7 @@ export function Insights() {
                     Area chart: nightly therapy pressure in cmH₂O, showing P50 (median) and P95 values per night.
                   </figcaption>
                 <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
-                  <AreaChart data={pressureChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+                  <AreaChart data={pressureChartData} margin={{ top: 4, right: 20, bottom: 0, left: -12 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" interval={nTicks(pressureChartData.length)} />
                     <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={['auto', 'auto']} />

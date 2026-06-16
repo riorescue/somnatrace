@@ -235,7 +235,7 @@ export function EffectivenessReport() {
               Line chart: residual AHI trend over the last 90 days with severity zone shading. Data also available in the nightly summary table below.
             </figcaption>
           <ResponsiveContainer aria-hidden="true" width="100%" height={210}>
-            <ComposedChart data={ahiChartData} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
+            <ComposedChart data={ahiChartData} margin={{ top: 4, right: 20, bottom: 0, left: -8 }}>
               {AHI_ZONES.map((z, i) => (
                 <ReferenceArea key={i} y1={z.lo} y2={z.hi} fill={z.fill} fillOpacity={0.45} ifOverflow="hidden" />
               ))}
@@ -278,7 +278,7 @@ export function EffectivenessReport() {
                 Area chart: nightly therapy pressure trend in cmH₂O, showing P50 (median) and P95 values.
               </figcaption>
             <ResponsiveContainer aria-hidden="true" width="100%" height={180}>
-              <AreaChart data={pressureChartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+              <AreaChart data={pressureChartData} margin={{ top: 4, right: 20, bottom: 0, left: -12 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={Math.max(0, Math.ceil(pressureChartData.length / 8) - 1)} />
                 <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={['auto', 'auto']} />

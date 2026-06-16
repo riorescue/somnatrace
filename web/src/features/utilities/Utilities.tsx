@@ -4,8 +4,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Trash2, DatabaseZap, RefreshCw, MemoryStick, Download,
-  AlertTriangle, CheckCircle2, Loader2, ChevronRight, ArchiveRestore, HardDrive,
+  Trash2, DatabaseZap, Download,
+  AlertTriangle, CheckCircle2, Loader2, ArchiveRestore, HardDrive,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -168,19 +168,33 @@ function fmtBackupDate(iso: string): string {
 
 interface BackupRowProps {
   backup: Backup
+  currentSchemaVersion: string
   onRestore: () => void
   onDelete: () => void
   isRestoring: boolean
   isDeleting: boolean
 }
 
-function BackupItem({ backup, onRestore, onDelete, isRestoring, isDeleting }: BackupRowProps) {
+function BackupItem({ backup, currentSchemaVersion, onRestore, onDelete, isRestoring, isDeleting }: BackupRowProps) {
+  const versionMismatch = backup.schema_version && currentSchemaVersion && backup.schema_version !== currentSchemaVersion
   return (
     <div className="flex items-center gap-3 px-5 py-3 bg-slate-50 rounded-xl">
       <HardDrive className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-slate-700 truncate">{fmtBackupDate(backup.created_at)}</p>
-        <p className="text-xs text-slate-500">{fmtBytes(backup.size_bytes)}</p>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <p className="text-xs text-slate-500">{fmtBytes(backup.size_bytes)}</p>
+          {backup.schema_version && (
+            <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-mono ${
+              versionMismatch
+                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                : 'bg-slate-100 text-slate-500'
+            }`}>
+              {versionMismatch && <AlertTriangle className="w-3 h-3" aria-hidden="true" />}
+              schema {backup.schema_version}
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <button
@@ -220,13 +234,6 @@ export function Utilities() {
     queryKey: ['db-stats'],
     queryFn: api.utilities.stats,
     refetchInterval: false,
-  })
-
-  const { data: detected, refetch: refetchDetect, isFetching: detecting } = useQuery({
-    queryKey: ['detect'],
-    queryFn: api.utilities.detect,
-    refetchInterval: false,
-    enabled: false, // only run on demand
   })
 
   const deleteMutation = useMutation({
@@ -424,6 +431,7 @@ export function Utilities() {
               <BackupItem
                 key={backup.id}
                 backup={backup}
+                currentSchemaVersion={stats?.schema_version ?? ''}
                 isRestoring={activeBackupOp?.id === backup.id && activeBackupOp.op === 'restore'}
                 isDeleting={activeBackupOp?.id === backup.id && activeBackupOp.op === 'delete'}
                 onRestore={() => setConfirm({ type: 'restore', backup })}
@@ -436,55 +444,6 @@ export function Utilities() {
         {backups.length === 0 && !createBackupMutation.isPending && (
           <div className="px-5 pb-4">
             <p className="text-xs text-slate-500">No backups yet. Click "Back Up Now" to create your first snapshot.</p>
-          </div>
-        )}
-      </Section>
-
-      {/* SD card detection */}
-      <Section title="Device Detection">
-        <Row
-          icon={<MemoryStick className="w-4 h-4" />}
-          label="Scan for SD Cards"
-          description="Check mounted volumes for ResMed SD cards ready to import."
-          action={
-            <button
-              onClick={() => refetchDetect()}
-              disabled={detecting}
-              className="btn-ghost text-sm flex items-center gap-1.5"
-            >
-              {detecting
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-                : <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />}
-              Scan
-            </button>
-          }
-        />
-
-        {detected && (
-          <div className="px-5 pb-4">
-            {detected.cards.length === 0 ? (
-              <p className="text-xs text-slate-500">No ResMed SD cards found in mounted volumes.</p>
-            ) : (
-              <ul className="space-y-2">
-                {detected.cards.map(card => (
-                  <li key={card.path} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />
-                    <span className="font-mono text-slate-700 text-xs">{card.path}</span>
-                    <a
-                      href="/imports"
-                      onClick={() => {
-                        // Pre-fill import path via sessionStorage for the imports page to pick up
-                        sessionStorage.setItem('prefill_import_path', card.path)
-                        window.location.href = '/imports'
-                      }}
-                      className="ml-auto flex items-center gap-1 text-brand-600 hover:text-brand-700 text-xs font-medium"
-                    >
-                      Import <ChevronRight className="w-3 h-3" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         )}
       </Section>
@@ -503,7 +462,13 @@ export function Utilities() {
       {confirm !== null && typeof confirm === 'object' && confirm.type === 'restore' && (
         <ConfirmDialog
           title="Restore this backup?"
-          body={`All current data will be replaced with the snapshot from ${fmtBackupDate(confirm.backup.created_at)}. This cannot be undone.`}
+          body={(() => {
+            const base = `All current data will be replaced with the snapshot from ${fmtBackupDate(confirm.backup.created_at)}. This cannot be undone.`
+            const mismatch = confirm.backup.schema_version && stats?.schema_version && confirm.backup.schema_version !== stats.schema_version
+            return mismatch
+              ? `${base} This backup uses schema ${confirm.backup.schema_version}; the app will migrate data to the current schema after restore.`
+              : base
+          })()}
           confirmLabel="Yes, restore"
           danger
           onConfirm={() => {

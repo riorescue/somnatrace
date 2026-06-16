@@ -77,11 +77,11 @@ All configuration is read from environment variables. Every variable has a sensi
 |---|---|---|
 | `SOMNATRACE_HOST` | `127.0.0.1` | Bind address |
 | `SOMNATRACE_PORT` | `8080` | Listen port |
-| `SOMNATRACE_MODE` | `development` | Must be `production` in production |
+| `SOMNATRACE_MODE` | `production` | Set to `development` for local development |
 | `SOMNATRACE_DATA_DIR` | `~/.somnatrace` | Directory for the database and backups |
 | `SOMNATRACE_DB_PATH` | `$DATA_DIR/somnatrace.db` | Full path to the SQLite file |
 
-**`SOMNATRACE_MODE=production` is required.** In development mode the binary does not serve the embedded frontend.
+In development mode the binary does not serve the embedded frontend — leave `SOMNATRACE_MODE` unset (or set it to `production`) for deployed instances.
 
 To listen on all interfaces (e.g., for Docker or a reverse proxy):
 

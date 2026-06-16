@@ -19,6 +19,10 @@ import (
 	"github.com/somnatrace/somnatrace/internal/models"
 )
 
+// ErrPendingReview is returned by Create when an import is already awaiting
+// session selection. Only one import may be in pending_review at a time.
+var ErrPendingReview = fmt.Errorf("an import is already awaiting session review")
+
 // SessionCandidate is a lightweight summary of a discovered session shown to
 // the user during the review step before they commit sessions to the database.
 type SessionCandidate struct {
@@ -86,11 +90,24 @@ func (s *ImportService) List() ([]models.Import, error) {
 
 // Create inserts a new import record with status "pending" and returns it.
 // The caller should immediately call RunImport to start the pipeline.
+// Returns an error if any import is currently in pending_review, since the
+// in-memory candidates for that import would be lost if a second parse ran.
 func (s *ImportService) Create(sourcePath, sourceName string) (*models.Import, error) {
+	var existing string
+	err := s.db.QueryRow(
+		`SELECT id FROM imports WHERE status = 'pending_review' LIMIT 1`,
+	).Scan(&existing)
+	if err == nil {
+		return nil, ErrPendingReview
+	}
+	if err != sql.ErrNoRows {
+		return nil, fmt.Errorf("check pending review: %w", err)
+	}
+
 	id := newID()
 	now := time.Now().UTC()
 
-	_, err := s.db.Exec(`
+	_, err = s.db.Exec(`
 		INSERT INTO imports
 		  (id, device_id, source_path, source_name, status, parser_version, started_at, created_at)
 		VALUES (?, NULL, ?, ?, 'pending', ?, ?, ?)

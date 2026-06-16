@@ -530,7 +530,7 @@ export function ComplianceReport() {
             Bar chart: nightly CPAP usage in hours over the last 90 days. Green bars meet the usage target, amber bars are below target, red bars are non-compliant. Numeric data available in the compliance table above.
           </figcaption>
         <ResponsiveContainer aria-hidden="true" width="100%" height={200}>
-          <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+          <BarChart data={chartData} margin={{ top: 4, right: 20, bottom: 0, left: -12 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="#94a3b8" interval={tickInterval} />
             <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={[0, 'auto']} />

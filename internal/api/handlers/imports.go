@@ -5,6 +5,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/somnatrace/somnatrace/internal/models"
@@ -57,6 +58,10 @@ func (h *ImportsHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	imp, err := h.svc.Create(body.SourcePath, body.SourceName)
 	if err != nil {
+		if errors.Is(err, service.ErrPendingReview) {
+			writeError(w, http.StatusConflict, "an import is already awaiting session review — complete it before starting a new one")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, "failed to create import")
 		return
 	}

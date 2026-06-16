@@ -66,12 +66,12 @@ function FindingRow({ finding, sessionStart, onZoom }: { finding: Finding; sessi
           <div className="flex items-center gap-2 shrink-0">
             <TimeRange startSec={finding.start_sec} endSec={finding.end_sec} sessionStart={sessionStart} />
             {clickable && (
-              <ZoomIn className="w-3.5 h-3.5 text-slate-200 group-hover:text-brand-400 transition-colors shrink-0" />
+              <ZoomIn className="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-400 transition-colors shrink-0" />
             )}
           </div>
         </div>
         <p className="text-xs text-slate-500 leading-relaxed">{finding.detail}</p>
-        <p className="text-[10px] text-slate-300 font-mono mt-1">{finding.rule_id}</p>
+        <p className="text-[10px] text-slate-500 font-mono mt-1">{finding.rule_id}</p>
       </div>
     </div>
   )

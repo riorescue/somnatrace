@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import { useQuery } from '@tanstack/react-query'
-import { Server, Database, Cpu, Shield, CheckCircle2, Clock, Accessibility } from 'lucide-react'
+import { Server, Database, Cpu, Shield, CheckCircle2, Accessibility } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
 import { FullPageSpinner } from '@/components/LoadingSpinner'
@@ -60,7 +60,7 @@ export function About() {
           <dl className="space-y-3">
             {[
               ['Driver',         'SQLite (WAL mode, pure-Go)'],
-              ['Schema version', '009_app_settings'],
+              ['Schema version', stats?.schema_version ?? '—'],
               ['Sessions',       stats ? String(stats.counts.sessions) : '—'],
               ['Signal records', stats ? String(stats.counts.session_signals) : '—'],
               ['Database size',  stats ? fmtBytes(stats.size_bytes) : '—'],
@@ -87,33 +87,18 @@ export function About() {
           </h2>
           <div className="rounded-lg border border-slate-200 divide-y divide-slate-100">
             {[
-              { name: 'ResMed AirSense 11',  note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-              { name: 'ResMed AirSense 10',  note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-              { name: 'ResMed AirCurve 11',  note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-              { name: 'ResMed AirCurve 10',  note: 'Full EDF parsing · SD card import · Signal visualization · Settings & identification capture' },
-            ].map(({ name, note }) => (
+              'ResMed AirSense 11',
+              'ResMed AirSense 10',
+              'ResMed AirCurve 11',
+              'ResMed AirCurve 10',
+            ].map((name) => (
               <div key={name} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="text-sm text-slate-700">{name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{note}</p>
-                </div>
+                <p className="text-sm text-slate-700">{name}</p>
                 <span className="ml-4 shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3" /> Working
+                  <CheckCircle2 className="w-3 h-3" /> Supported
                 </span>
               </div>
             ))}
-            <div className="flex items-center justify-between px-4 py-3">
-              <p className="text-sm text-slate-500">Philips DreamStation series</p>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
-                <Clock className="w-3 h-3" /> Planned
-              </span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-3">
-              <p className="text-sm text-slate-500">Other EDF-compatible devices</p>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
-                <Clock className="w-3 h-3" /> Planned
-              </span>
-            </div>
           </div>
         </div>
 
@@ -133,7 +118,7 @@ export function About() {
               ['Keyboard navigation',  'Full tab order throughout; skip-to-content link at page top; Escape closes dialogs and popovers'],
               ['Screen reader support','Landmark regions labelled; all interactive elements have accessible names; dynamic content announced via ARIA live regions'],
               ['Focus visibility',     'Keyboard focus outline always visible (:focus-visible); suppressed for mouse users'],
-              ['Color contrast',       'All text meets the 4.5:1 AA minimum ratio, including on the dark sidebar background'],
+              ['Color contrast',       'All text meets the 4.5:1 AA minimum ratio'],
               ['Color independence',   'Status and severity information is never conveyed by color alone — text labels accompany all color-coded values'],
               ['Reduced motion',       'All CSS animations and transitions are suppressed when the OS prefers-reduced-motion setting is active'],
               ['Charts',               'Recharts visualizations are hidden from assistive technology; each chart has a screen-reader-only text description as an alternative'],
@@ -144,9 +129,6 @@ export function About() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-slate-500 mt-3">
-            Found an accessibility issue? Please open a GitHub issue with the page, element, and assistive technology affected.
-          </p>
         </div>
 
         {/* Privacy */}
