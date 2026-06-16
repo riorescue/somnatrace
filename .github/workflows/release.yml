@@ -39,7 +39,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.25'
           cache: true
 
       - name: Build UI (once, cached on first matrix run)
@@ -54,7 +54,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME}"
           go build \
-            -ldflags "-s -w -X github.com/somnatrace/somnatrace/internal/config.Version=${VERSION}" \
+            -ldflags "-s -w -X github.com/riorescue/somnatrace/internal/config.Version=${VERSION}" \
             -o "somnatrace-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" \
             ./cmd/somnatrace
 

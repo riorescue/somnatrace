@@ -4,7 +4,7 @@
 
 | Tool | Minimum version | Install |
 |---|---|---|
-| Go | 1.22 | https://go.dev/dl |
+| Go | 1.25 | https://go.dev/dl |
 | Node.js | 20 | https://nodejs.org |
 | npm | 10 | Bundled with Node |
 | Docker (optional) | 24 | https://docs.docker.com/get-docker |
@@ -13,7 +13,7 @@
 
 ```bash
 # 1. Clone
-git clone https://github.com/somnatrace/somnatrace.git
+git clone https://github.com/riorescue/somnatrace.git
 cd somnatrace
 
 # 2. Install Go dependencies

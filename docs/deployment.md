@@ -31,7 +31,7 @@ Building SomnaTrace requires:
 
 | Tool | Minimum Version | Notes |
 |---|---|---|
-| Go | 1.22 | [go.dev/dl](https://go.dev/dl) |
+| Go | 1.25 | [go.dev/dl](https://go.dev/dl) |
 | Node.js | 20 | [nodejs.org](https://nodejs.org) |
 | npm | 10 | Bundled with Node |
 | git | any | Required for version embedding |
@@ -46,7 +46,7 @@ The build is a two-step process: compile the frontend, then embed it into the Go
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/somnatrace/somnatrace.git
+git clone https://github.com/riorescue/somnatrace.git
 cd somnatrace
 
 # 2. Install frontend dependencies
@@ -343,27 +343,27 @@ VERSION=$(git describe --tags --always --dirty)
 
 # macOS (Apple Silicon)
 GOOS=darwin  GOARCH=arm64 go build \
-  -ldflags "-s -w -X github.com/somnatrace/somnatrace/internal/config.Version=$VERSION" \
+  -ldflags "-s -w -X github.com/riorescue/somnatrace/internal/config.Version=$VERSION" \
   -o dist/somnatrace-darwin-arm64 ./cmd/somnatrace
 
 # macOS (Intel)
 GOOS=darwin  GOARCH=amd64 go build \
-  -ldflags "-s -w -X github.com/somnatrace/somnatrace/internal/config.Version=$VERSION" \
+  -ldflags "-s -w -X github.com/riorescue/somnatrace/internal/config.Version=$VERSION" \
   -o dist/somnatrace-darwin-amd64 ./cmd/somnatrace
 
 # Linux (x86-64)
 GOOS=linux   GOARCH=amd64 go build \
-  -ldflags "-s -w -X github.com/somnatrace/somnatrace/internal/config.Version=$VERSION" \
+  -ldflags "-s -w -X github.com/riorescue/somnatrace/internal/config.Version=$VERSION" \
   -o dist/somnatrace-linux-amd64 ./cmd/somnatrace
 
 # Linux (ARM64 — Raspberry Pi, AWS Graviton)
 GOOS=linux   GOARCH=arm64 go build \
-  -ldflags "-s -w -X github.com/somnatrace/somnatrace/internal/config.Version=$VERSION" \
+  -ldflags "-s -w -X github.com/riorescue/somnatrace/internal/config.Version=$VERSION" \
   -o dist/somnatrace-linux-arm64 ./cmd/somnatrace
 
 # Windows (x86-64)
 GOOS=windows GOARCH=amd64 go build \
-  -ldflags "-s -w -X github.com/somnatrace/somnatrace/internal/config.Version=$VERSION" \
+  -ldflags "-s -w -X github.com/riorescue/somnatrace/internal/config.Version=$VERSION" \
   -o dist/somnatrace-windows-amd64.exe ./cmd/somnatrace
 ```
 
@@ -408,7 +408,7 @@ builds:
     binary: somnatrace
     ldflags:
       - -s -w
-      - -X github.com/somnatrace/somnatrace/internal/config.Version={{.Version}}
+      - -X github.com/riorescue/somnatrace/internal/config.Version={{.Version}}
     goos:
       - linux
       - darwin

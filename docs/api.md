@@ -19,7 +19,7 @@ Returns application status.
   "version": "0.1.0",
   "mode": "development",
   "uptime": "1m23s",
-  "go_version": "go1.22.0",
+  "go_version": "go1.25.0",
   "timestamp": "2025-01-15T10:30:00Z"
 }
 ```

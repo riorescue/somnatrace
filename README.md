@@ -37,10 +37,10 @@ SomnaTrace is an open-source alternative: insert your SD card, point the app at 
 
 ## Quick Start (native)
 
-**Prerequisites:** Go 1.22+, Node 20+
+**Prerequisites:** Go 1.25+, Node 20+
 
 ```bash
-git clone https://github.com/somnatrace/somnatrace.git
+git clone https://github.com/riorescue/somnatrace.git
 cd somnatrace
 
 # Install frontend dependencies
@@ -57,7 +57,7 @@ Open [http://localhost:5173](http://localhost:5173). Demo data loads automatical
 ## Quick Start (Docker)
 
 ```bash
-git clone https://github.com/somnatrace/somnatrace.git
+git clone https://github.com/riorescue/somnatrace.git
 cd somnatrace
 docker compose up
 ```
@@ -103,6 +103,7 @@ All settings are read from environment variables with sensible defaults.
 ```
 cmd/somnatrace/     Entry point
 cmd/seed/           Synthetic data seeder
+cmd/probe/          EDF diagnostic tool
 internal/
   api/              HTTP router, handlers, middleware
   app/              Application wiring
