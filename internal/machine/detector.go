@@ -11,7 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // Detector identifies the device family present at a given import source path.

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/somnatrace/somnatrace/internal/service"
+	"github.com/riorescue/somnatrace/internal/service"
 )
 
 // InsightsHandler serves the aggregated insights endpoint used by the

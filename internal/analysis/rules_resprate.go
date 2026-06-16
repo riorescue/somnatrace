@@ -6,7 +6,7 @@ package analysis
 import (
 	"fmt"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // RR-01: resp_rate < 10 bpm for >= 60 s (30 samples at 2 s)

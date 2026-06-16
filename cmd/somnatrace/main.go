@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/app"
-	"github.com/somnatrace/somnatrace/internal/config"
+	"github.com/riorescue/somnatrace/internal/app"
+	"github.com/riorescue/somnatrace/internal/config"
 )
 
 func main() {

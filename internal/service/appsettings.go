@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/somnatrace/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/db"
 )
 
 const (

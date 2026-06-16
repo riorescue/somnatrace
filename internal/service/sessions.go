@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/somnatrace/somnatrace/internal/db"
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // SessionService provides read access to sessions, events, and clinical findings.

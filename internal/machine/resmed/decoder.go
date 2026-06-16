@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/edf"
+	"github.com/riorescue/somnatrace/internal/edf"
 )
 
 // Decoder wraps the edf package with ResMed-specific validation helpers.

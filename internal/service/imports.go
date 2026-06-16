@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/db"
-	"github.com/somnatrace/somnatrace/internal/importer"
-	"github.com/somnatrace/somnatrace/internal/machine"
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/importer"
+	"github.com/riorescue/somnatrace/internal/machine"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // ErrPendingReview is returned by Create when an import is already awaiting

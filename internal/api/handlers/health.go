@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/config"
+	"github.com/riorescue/somnatrace/internal/config"
 )
 
 // HealthHandler serves GET /api/v1/health with basic application metadata.

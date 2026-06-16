@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import { NavLink } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard,
   Upload,
@@ -15,6 +16,7 @@ import {
   Info,
   ArrowLeftRight,
 } from 'lucide-react'
+import { api } from '@/lib/api'
 
 const nav = [
   { to: '/',          label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -30,13 +32,19 @@ const nav = [
 ]
 
 export function Sidebar() {
+  const { data } = useQuery({
+    queryKey: ['health'],
+    queryFn: api.health,
+    refetchInterval: 30_000,
+  })
+
   return (
     <aside aria-label="Application navigation" className="fixed inset-y-0 left-0 flex flex-col w-60 bg-slate-900 text-slate-100">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-slate-800">
         <Activity className="w-5 h-5 text-brand-400" aria-hidden="true" />
         <span className="font-semibold tracking-tight text-white">SomnaTrace</span>
-        <span className="ml-auto text-xs text-slate-400" aria-hidden="true">v0.1</span>
+        <span className="ml-auto text-xs text-slate-400" aria-hidden="true">{data?.version ? `v${data.version}` : ''}</span>
       </div>
 
       {/* Navigation */}

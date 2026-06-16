@@ -6,8 +6,8 @@ package service
 import (
 	"fmt"
 
-	"github.com/somnatrace/somnatrace/internal/analysis"
-	"github.com/somnatrace/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/analysis"
+	"github.com/riorescue/somnatrace/internal/db"
 )
 
 // RulesService manages clinical rule enable/disable settings.

@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/somnatrace/somnatrace/migrations"
+	"github.com/riorescue/somnatrace/migrations"
 )
 
 // Migrate applies any SQL migration files that have not yet been recorded in

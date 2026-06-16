@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/somnatrace/somnatrace/internal/config"
+	"github.com/riorescue/somnatrace/internal/config"
 )
 
 // RegisterStaticHandler wires the embedded frontend into mux.

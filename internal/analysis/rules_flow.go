@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // F-01: Probable Apnea — |flow| < 10% of rolling 2-minute baseline for >= 10 s.

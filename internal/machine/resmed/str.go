@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/edf"
+	"github.com/riorescue/somnatrace/internal/edf"
 )
 
 // STRRecord holds the per-day therapy summary from STR.edf.

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // InsightsResult is the complete payload for the Insights page.

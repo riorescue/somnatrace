@@ -169,7 +169,7 @@ export function About() {
             Signal and settings data are stored in a local SQLite database and never leave your device.
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Source code: <span className="font-mono">github.com/somnatrace/somnatrace</span>
+            Source code: <span className="font-mono">github.com/riorescue/somnatrace</span>
           </p>
         </div>
       </div>

@@ -6,8 +6,8 @@ package service
 import (
 	"fmt"
 
-	"github.com/somnatrace/somnatrace/internal/db"
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // DeviceService provides read access to the devices table.

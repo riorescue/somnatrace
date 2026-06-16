@@ -8,8 +8,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/somnatrace/somnatrace/internal/models"
-	"github.com/somnatrace/somnatrace/internal/service"
+	"github.com/riorescue/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/service"
 )
 
 

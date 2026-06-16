@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/analysis"
-	"github.com/somnatrace/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/analysis"
+	"github.com/riorescue/somnatrace/internal/db"
 )
 
 // AnalysisService runs the clinical analysis engine against stored session

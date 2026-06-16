@@ -7,7 +7,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // rollingBaseline computes the mean absolute value of flow over a sliding

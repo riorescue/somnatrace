@@ -8,8 +8,8 @@
 package service
 
 import (
-	"github.com/somnatrace/somnatrace/internal/analysis"
-	"github.com/somnatrace/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/analysis"
+	"github.com/riorescue/somnatrace/internal/db"
 )
 
 // Services groups all domain services and is passed to the HTTP router as a

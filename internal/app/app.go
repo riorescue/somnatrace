@@ -9,10 +9,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/somnatrace/somnatrace/internal/api"
-	"github.com/somnatrace/somnatrace/internal/config"
-	"github.com/somnatrace/somnatrace/internal/db"
-	"github.com/somnatrace/somnatrace/internal/service"
+	"github.com/riorescue/somnatrace/internal/api"
+	"github.com/riorescue/somnatrace/internal/config"
+	"github.com/riorescue/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/service"
 )
 
 // App holds the shared resources owned by the running process.

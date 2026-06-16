@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/models"
-	"github.com/somnatrace/somnatrace/internal/service"
+	"github.com/riorescue/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/service"
 )
 
 // SessionsHandler serves all session-scoped endpoints: list, get, signals,

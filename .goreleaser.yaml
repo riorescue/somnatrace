@@ -11,7 +11,7 @@ builds:
     binary: somnatrace
     ldflags:
       - -s -w
-      - -X github.com/somnatrace/somnatrace/internal/config.Version={{.Version}}
+      - -X github.com/riorescue/somnatrace/internal/config.Version={{.Version}}
     goos:
       - linux
       - darwin

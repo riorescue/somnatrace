@@ -6,8 +6,8 @@ package resmed
 import (
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/edf"
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/edf"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // MapToSession converts a decoded EDF file header into a normalised Session

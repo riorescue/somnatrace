@@ -9,7 +9,7 @@ COPY web/ .
 RUN npm run build
 
 # ── Stage 2: build Go binary ─────────────────────────────────────────────────
-FROM golang:1.22-alpine AS go-builder
+FROM golang:1.25-alpine AS go-builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY --from=ui-builder /app/internal/web/dist ./internal/web/dist
 
 ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux go build \
-      -ldflags "-s -w -X github.com/somnatrace/somnatrace/internal/config.Version=${VERSION}" \
+      -ldflags "-s -w -X github.com/riorescue/somnatrace/internal/config.Version=${VERSION}" \
       -o /somnatrace ./cmd/somnatrace
 
 # ── Stage 3: runtime image ───────────────────────────────────────────────────

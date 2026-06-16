@@ -1,4 +1,4 @@
-module github.com/somnatrace/somnatrace
+module github.com/riorescue/somnatrace
 
 go 1.25.0
 

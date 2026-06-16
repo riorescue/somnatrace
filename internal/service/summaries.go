@@ -6,8 +6,8 @@ package service
 import (
 	"fmt"
 
-	"github.com/somnatrace/somnatrace/internal/db"
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // SummaryService provides read access to daily therapy summaries and the

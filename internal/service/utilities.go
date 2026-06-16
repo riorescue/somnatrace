@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/db"
-	"github.com/somnatrace/somnatrace/internal/machine"
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/db"
+	"github.com/riorescue/somnatrace/internal/machine"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 var backupIDPattern = regexp.MustCompile(`^\d{8}-\d{6}$`)

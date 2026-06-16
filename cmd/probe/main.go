@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"github.com/somnatrace/somnatrace/internal/edf"
+	"github.com/riorescue/somnatrace/internal/edf"
 )
 
 func main() {

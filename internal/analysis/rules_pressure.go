@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 const deviceMaxPressure = 20.0 // cmH₂O (ResMed AirSense 10 / 11 device maximum)

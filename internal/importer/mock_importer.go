@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // MockImporter is a drop-in Importer that returns seven days of synthetic

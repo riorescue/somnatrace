@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/edf"
+	"github.com/riorescue/somnatrace/internal/edf"
 )
 
 // SessionBundle groups EDF files belonging to one therapy session.

@@ -6,7 +6,7 @@ package analysis
 import (
 	"fmt"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // FL-01: flow_lim > 0.10 for >= 2 continuous minutes (60 samples at 2 s).

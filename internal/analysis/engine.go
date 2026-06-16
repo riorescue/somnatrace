@@ -7,7 +7,7 @@
 // Register or by appending to DefaultEngine.
 package analysis
 
-import "github.com/somnatrace/somnatrace/internal/models"
+import "github.com/riorescue/somnatrace/internal/models"
 
 type Severity string
 

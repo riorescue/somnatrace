@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/somnatrace/somnatrace/internal/service"
+	"github.com/riorescue/somnatrace/internal/service"
 )
 
 // AppSettingsHandler serves application-level configuration endpoints.

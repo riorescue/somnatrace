@@ -6,7 +6,7 @@ package analysis
 import (
 	"fmt"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // L-01: total leak > 40 L/min for >= 30 s (15 samples at 2 s)

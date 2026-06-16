@@ -10,7 +10,7 @@ package importer
 import (
 	"context"
 
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // DeviceRecord carries the identification fields for a device discovered

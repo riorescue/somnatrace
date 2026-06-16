@@ -10,9 +10,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/somnatrace/somnatrace/internal/edf"
-	"github.com/somnatrace/somnatrace/internal/machine/resmed"
-	"github.com/somnatrace/somnatrace/internal/models"
+	"github.com/riorescue/somnatrace/internal/edf"
+	"github.com/riorescue/somnatrace/internal/machine/resmed"
+	"github.com/riorescue/somnatrace/internal/models"
 )
 
 // ResMedImporter reads a mirrored ResMed SD card directory and produces

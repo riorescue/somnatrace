@@ -9,11 +9,11 @@ package api
 import (
 	"net/http"
 
-	"github.com/somnatrace/somnatrace/internal/api/handlers"
-	"github.com/somnatrace/somnatrace/internal/api/middleware"
-	"github.com/somnatrace/somnatrace/internal/config"
-	"github.com/somnatrace/somnatrace/internal/service"
-	"github.com/somnatrace/somnatrace/internal/web"
+	"github.com/riorescue/somnatrace/internal/api/handlers"
+	"github.com/riorescue/somnatrace/internal/api/middleware"
+	"github.com/riorescue/somnatrace/internal/config"
+	"github.com/riorescue/somnatrace/internal/service"
+	"github.com/riorescue/somnatrace/internal/web"
 )
 
 // NewRouter constructs the root HTTP handler with all API routes registered

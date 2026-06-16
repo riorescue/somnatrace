@@ -2,6 +2,9 @@
 /somnatrace
 /somnatrace.exe
 /seed
+
+# GoReleaser output
+/dist/
 *.db
 *.db-shm
 *.db-wal
