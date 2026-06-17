@@ -168,7 +168,12 @@ func (s *ImportService) runImport(ctx context.Context, importID, sourcePath stri
 	case models.DeviceFamilyResMed:
 		imp = importer.NewResMedImporter()
 	default:
-		return fmt.Errorf("unsupported device family: %s", family)
+		return fmt.Errorf(
+			"no recognized CPAP device data found at %q — "+
+				"point to the root of the SD card (e.g. D:\\ on Windows, /Volumes/RESMED on macOS) "+
+				"and confirm it contains a DATALOG folder",
+			sourcePath,
+		)
 	}
 
 	src := importer.Source{Path: sourcePath, Name: sourcePath}

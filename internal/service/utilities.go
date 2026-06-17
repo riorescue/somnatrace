@@ -145,21 +145,6 @@ func (s *UtilitiesService) DetectCards() ([]models.DetectedCard, error) {
 	return found, nil
 }
 
-// mountCandidates returns a list of directories to probe for device data.
-// On macOS, /Volumes/<label> is the standard mount point for removable media.
-func mountCandidates() []string {
-	entries, err := os.ReadDir("/Volumes")
-	if err != nil {
-		return nil
-	}
-	var paths []string
-	for _, e := range entries {
-		if e.IsDir() {
-			paths = append(paths, "/Volumes/"+e.Name())
-		}
-	}
-	return paths
-}
 
 // backupDir returns the directory where database backups are stored.
 func (s *UtilitiesService) backupDir() string {

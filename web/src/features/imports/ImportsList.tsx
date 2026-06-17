@@ -54,11 +54,15 @@ export function ImportsList() {
     createMut.mutate({ source_path: sourcePath.trim(), source_name: sourceName.trim() || undefined })
   }
 
+  function pathLabel(path: string): string {
+    // Handle both Unix '/' and Windows '\' separators.
+    const parts = path.replace(/\\/g, '/').split('/').filter(Boolean)
+    return parts[parts.length - 1] ?? path
+  }
+
   function selectCard(path: string) {
     setSourcePath(path)
-    const parts = path.split('/')
-    const label = parts[parts.length - 1] || path
-    setSourceName(label)
+    setSourceName(pathLabel(path))
     setFormError('')
   }
 
@@ -112,7 +116,7 @@ export function ImportsList() {
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">
-                    {card.path.split('/').pop() ?? card.path}
+                    {pathLabel(card.path)}
                   </p>
                   <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">{card.path}</p>
                 </div>
@@ -149,7 +153,7 @@ export function ImportsList() {
               type="text"
               value={sourcePath}
               onChange={e => setSourcePath(e.target.value)}
-              placeholder="/Volumes/DEVICE or /path/to/mirror"
+              placeholder="D:\ (Windows) or /Volumes/RESMED (macOS)"
               aria-required="true"
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none
                          focus:ring-2 focus:ring-brand-500 focus:border-transparent"
