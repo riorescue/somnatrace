@@ -2,10 +2,6 @@
 
 **Local-first sleep therapy data viewer.** Import your SD card exports, explore nightly sessions, and track therapy trends — entirely on your own machine. No account, no cloud, no telemetry.
 
-> **Status: v0.2.0 — Functional with real CPAP therapy data.** Full EDF parsing, signal visualization, event timeline, clinical analysis engine, multi-night insights, reports, configurable thresholds, and machine settings capture are all working.
-
----
-
 ## Why SomnaTrace?
 
 Modern CPAP devices record detailed therapy data to SD cards — nightly AHI, pressure logs, flow waveforms, and event markers. Most users either rely on the device manufacturer's proprietary cloud service, or work with brittle third-party tools that haven't kept pace with newer devices.
@@ -136,6 +132,7 @@ cmd/somnatrace/     Entry point
 cmd/seed/           Synthetic data seeder
 cmd/probe/          EDF diagnostic tool
 internal/
+  analysis/         Clinical analysis engine (rule definitions, findings, severity)
   api/              HTTP router, handlers, middleware
   app/              Application wiring
   config/           Environment-based configuration
@@ -149,7 +146,9 @@ internal/
   models/           Shared data models
   service/          Business logic layer
   web/              Embedded frontend assets
-migrations/         SQL migration files (014 migrations applied)
+migrations/         SQL migration files
+scripts/            Dev and build helper scripts
+testdata/           Sample SD card data for development and testing
 web/                Vite + React + TypeScript frontend
 docs/               Architecture and developer guides
 ```
