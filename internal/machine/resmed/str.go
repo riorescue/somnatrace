@@ -5,7 +5,9 @@ package resmed
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/riorescue/somnatrace/internal/edf"
@@ -49,31 +51,91 @@ type STRRecord struct {
 	MaskOffMin []float64
 }
 
-// ParseSTR reads <root>/STR.edf and returns one record per day.
-// loc is used to interpret the EDF header timestamp.
+// ParseSTR reads all STR.edf data available at root — including archived copies
+// in the STR_Backup/ subdirectory — and returns one record per calendar day.
+// Records from the primary STR.edf take precedence; backup files fill any gaps.
+// loc is used to interpret EDF header timestamps.
 func ParseSTR(root string, loc *time.Location) ([]STRRecord, error) {
-	f, err := edf.ReadFile(filepath.Join(root, "STR.edf"), loc)
+	primary, err := parseSTRFile(filepath.Join(root, "STR.edf"), loc)
 	if err != nil {
 		return nil, fmt.Errorf("resmed: parse STR.edf: %w", err)
 	}
 
-	idx := strSignalIndex(f)
-	get := func(label string) []float64 {
-		i, ok := idx[label]
-		if !ok {
-			return nil
-		}
-		return f.Signals[i].Samples
+	// Build a date-keyed map from primary records (most recent/authoritative).
+	byDate := make(map[string]STRRecord, len(primary))
+	for _, r := range primary {
+		byDate[r.Date.Format("2006-01-02")] = r
 	}
-	getScalar := func(label string, rec int) float64 {
-		vals := get(label)
+
+	// Merge any archived STR files that cover dates not in the primary.
+	backupDir := filepath.Join(root, "STR_Backup")
+	if entries, err := os.ReadDir(backupDir); err == nil {
+		for _, e := range entries {
+			name := strings.ToUpper(e.Name())
+			if e.IsDir() || !strings.HasSuffix(name, ".EDF") {
+				continue
+			}
+			recs, err := parseSTRFile(filepath.Join(backupDir, e.Name()), loc)
+			if err != nil {
+				continue // skip unreadable backup files
+			}
+			for _, r := range recs {
+				key := r.Date.Format("2006-01-02")
+				if _, exists := byDate[key]; !exists {
+					byDate[key] = r
+				}
+			}
+		}
+	}
+
+	// Flatten back to a slice ordered by date.
+	records := make([]STRRecord, 0, len(byDate))
+	for _, r := range byDate {
+		records = append(records, r)
+	}
+	sortSTRRecords(records)
+	return records, nil
+}
+
+// parseSTRFile parses a single STR.edf file and returns its records.
+func parseSTRFile(path string, loc *time.Location) ([]STRRecord, error) {
+	f, err := edf.ReadFile(path, loc)
+	if err != nil {
+		return nil, err
+	}
+	return extractSTRRecords(f, loc), nil
+}
+
+// extractSTRRecords converts a parsed STR EDF file into per-day STRRecords.
+// It accepts both the new AirSense 10 signal names (e.g. "Leak.50") and the
+// older S9 signal names (e.g. "Leak Med"), trying each in order.
+func extractSTRRecords(f *edf.File, loc *time.Location) []STRRecord {
+	idx := strSignalIndex(f)
+
+	// lookupFirst returns the first non-nil sample slice for any of the provided
+	// label prefixes (case-insensitive prefix match), or nil if none found.
+	lookupFirst := func(labels ...string) []float64 {
+		for _, lbl := range labels {
+			lower := strings.ToLower(lbl)
+			for sigLbl, i := range idx {
+				if strings.HasPrefix(strings.ToLower(sigLbl), lower) {
+					return f.Signals[i].Samples
+				}
+			}
+		}
+		return nil
+	}
+
+	getScalar := func(rec int, labels ...string) float64 {
+		vals := lookupFirst(labels...)
 		if vals == nil || rec >= len(vals) {
 			return -1
 		}
 		return vals[rec]
 	}
-	getArray := func(label string, rec, perRecord int) []float64 {
-		vals := get(label)
+
+	getArray := func(rec, perRecord int, labels ...string) []float64 {
+		vals := lookupFirst(labels...)
 		if vals == nil {
 			return nil
 		}
@@ -92,8 +154,8 @@ func ParseSTR(root string, loc *time.Location) ([]STRRecord, error) {
 		date := f.Header.StartTime.AddDate(0, 0, i)
 		date = time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc)
 
-		maskOnRaw  := getArray("MaskOn",  i, 20)
-		maskOffRaw := getArray("MaskOff", i, 20)
+		maskOnRaw  := getArray(i, 20, "MaskOn")
+		maskOffRaw := getArray(i, 20, "MaskOff")
 		var maskOn, maskOff []float64
 		for j := 0; j < 20; j++ {
 			if j < len(maskOnRaw) && maskOnRaw[j] >= 0 {
@@ -104,30 +166,30 @@ func ParseSTR(root string, loc *time.Location) ([]STRRecord, error) {
 
 		records = append(records, STRRecord{
 			Date:        date,
-			DurationMin: getScalar("Duration", i),
-			MaskPress50:  getScalar("MaskPress.50", i),
-			MaskPress95:  getScalar("MaskPress.95", i),
-			MaskPressMax: getScalar("MaskPress.Max", i),
-			Leak50:  getScalar("Leak.50", i),
-			Leak95:  getScalar("Leak.95", i),
-			LeakMax: getScalar("Leak.Max", i),
-			AHI: getScalar("AHI", i),
-			HI:  getScalar("HI", i),
-			AI:  getScalar("AI", i),
-			OAI: getScalar("OAI", i),
-			CAI: getScalar("CAI", i),
-			UAI: getScalar("UAI", i),
-			RespRate50: getScalar("RespRate.50", i),
-			MinVent50:  getScalar("MinVent.50", i),
-			TidVol50:   getScalar("TidVol.50", i),
-			SpO250:  getScalar("SpO2.50", i),
-			SpO295:  getScalar("SpO2.95", i),
-			SpO2Max: getScalar("SpO2.Max", i),
+			DurationMin: getScalar(i, "Duration", "Mask Dur"),
+			MaskPress50:  getScalar(i, "MaskPress.50", "Mask Pres Med"),
+			MaskPress95:  getScalar(i, "MaskPress.95", "Mask Pres 95"),
+			MaskPressMax: getScalar(i, "MaskPress.Max", "Mask Pres Max"),
+			Leak50:  getScalar(i, "Leak.50", "Leak Med"),
+			Leak95:  getScalar(i, "Leak.95", "Leak 95"),
+			LeakMax: getScalar(i, "Leak.Max", "Leak Max"),
+			AHI: getScalar(i, "AHI"),
+			HI:  getScalar(i, "HI"),
+			AI:  getScalar(i, "AI"),
+			OAI: getScalar(i, "OAI"),
+			CAI: getScalar(i, "CAI"),
+			UAI: getScalar(i, "UAI"),
+			RespRate50: getScalar(i, "RespRate.50", "RR Med"),
+			MinVent50:  getScalar(i, "MinVent.50", "Min Vent Med"),
+			TidVol50:   getScalar(i, "TidVol.50", "Tid Vol Med"),
+			SpO250:  getScalar(i, "SpO2.50", "SpO2 Med"),
+			SpO295:  getScalar(i, "SpO2.95", "SpO2 95"),
+			SpO2Max: getScalar(i, "SpO2.Max", "SpO2 Max"),
 			MaskOnMin:  maskOn,
 			MaskOffMin: maskOff,
 		})
 	}
-	return records, nil
+	return records
 }
 
 // FindDayRecord returns the STRRecord whose Date matches targetDate (date-only comparison).
@@ -153,4 +215,12 @@ func strSignalIndex(f *edf.File) map[string]int {
 		m[s.Label] = i
 	}
 	return m
+}
+
+func sortSTRRecords(recs []STRRecord) {
+	for i := 1; i < len(recs); i++ {
+		for j := i; j > 0 && recs[j].Date.Before(recs[j-1].Date); j-- {
+			recs[j], recs[j-1] = recs[j-1], recs[j]
+		}
+	}
 }

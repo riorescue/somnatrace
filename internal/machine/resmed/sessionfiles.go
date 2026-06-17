@@ -13,21 +13,22 @@ import (
 	"github.com/riorescue/somnatrace/internal/edf"
 )
 
-// SessionBundle groups EDF files belonging to one therapy session.
+// SessionBundle groups EDF files belonging to one continuous therapy segment.
+// A single calendar-day folder may contain multiple bundles when the user
+// removed and reapplied the mask during the night.
 type SessionBundle struct {
-	Date      time.Time // local date of the session (from folder name)
+	Date      time.Time // calendar date of the session (from folder name)
 	FolderDir string
 
 	// Parsed EDF files — only non-nil if present on the card.
 	BRP *edf.File // 25 Hz flow + pressure waveforms
 	PLD *edf.File // 2-second derived stats (pressure, leak, resp rate…)
 	SA2 *edf.File // 1 Hz SpO2 + pulse
-	CSL *edf.File // EDF+D clinical summary annotations
-	EVE *edf.File // EDF+D event annotations
+	CSL *edf.File // EDF+D Cheyne-Stokes annotation events
+	EVE *edf.File // EDF+D scored respiratory event annotations
 }
 
 // StartTime returns the EDF-recorded start time of the primary data file (PLD > BRP > SA2).
-// The returned time is already in local timezone (as parsed from the EDF header).
 func (s *SessionBundle) StartTime() time.Time {
 	for _, f := range []*edf.File{s.PLD, s.BRP, s.SA2} {
 		if f != nil {
@@ -41,15 +42,17 @@ func (s *SessionBundle) StartTime() time.Time {
 func (s *SessionBundle) EndTime() time.Time {
 	for _, f := range []*edf.File{s.PLD, s.BRP, s.SA2} {
 		if f != nil {
-			dur := time.Duration(float64(f.Header.NumDataRecords)*f.Header.DurationSec*float64(time.Second))
+			dur := time.Duration(float64(f.Header.NumDataRecords) * f.Header.DurationSec * float64(time.Second))
 			return f.Header.StartTime.Add(dur)
 		}
 	}
 	return time.Time{}
 }
 
-// DiscoverSessions walks the DATALOG directory and returns all session bundles.
-// loc is used to parse EDF timestamps.
+// DiscoverSessions walks the DATALOG directory and returns all session bundles
+// across all date subdirectories. A single date folder may yield multiple
+// bundles when the device records separate therapy segments in one night.
+// loc is used to interpret EDF header timestamps and repair corrupt ones.
 func DiscoverSessions(root string, loc *time.Location) ([]SessionBundle, error) {
 	datalogsDir := filepath.Join(root, "DATALOG")
 	entries, err := os.ReadDir(datalogsDir)
@@ -57,69 +60,184 @@ func DiscoverSessions(root string, loc *time.Location) ([]SessionBundle, error) 
 		return nil, fmt.Errorf("resmed: read DATALOG: %w", err)
 	}
 
-	var bundles []SessionBundle
+	var all []SessionBundle
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
-		// Folder name is YYYYMMDD
 		date, err := time.ParseInLocation("20060102", entry.Name(), loc)
 		if err != nil {
 			continue
 		}
-
-		bundle, err := loadSessionBundle(filepath.Join(datalogsDir, entry.Name()), date, loc)
+		bundles, err := discoverBundlesInDir(filepath.Join(datalogsDir, entry.Name()), date, loc)
 		if err != nil {
-			return nil, fmt.Errorf("resmed: load session %s: %w", entry.Name(), err)
+			return nil, fmt.Errorf("resmed: load sessions %s: %w", entry.Name(), err)
 		}
-		bundles = append(bundles, bundle)
+		all = append(all, bundles...)
 	}
-	return bundles, nil
+	return all, nil
 }
 
-func loadSessionBundle(dir string, date time.Time, loc *time.Location) (SessionBundle, error) {
-	sb := SessionBundle{Date: date, FolderDir: dir}
+// annotationMatchWindow is how far apart an EVE/CSL file's timestamp may be
+// from the nearest data file (BRP/PLD/SA2) and still be considered the same
+// therapy segment. ResMed firmware creates annotation files a few seconds
+// before the waveform files in the same session, so a short window is enough.
+const annotationMatchWindow = 5 * time.Minute
 
+// discoverBundlesInDir scans a single DATALOG/YYYYMMDD directory and returns
+// one SessionBundle per distinct therapy segment. Each EDF file's header start
+// time is validated against the filename-encoded time and repaired when the two
+// differ by more than 6 hours, which can happen due to a known ResMed firmware
+// bug that corrupts the ASCII date field in EDF headers.
+//
+// ResMed firmware assigns EVE/CSL annotation files a timestamp a few seconds
+// earlier than the corresponding BRP/PLD/SA2 waveform files for the same
+// segment. After the initial grouping by exact timestamp prefix, any group that
+// contains only annotation files is reassigned to the nearest data group within
+// annotationMatchWindow so that events are correctly associated with sessions.
+func discoverBundlesInDir(dir string, date time.Time, loc *time.Location) ([]SessionBundle, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return sb, err
+		return nil, err
 	}
+
+	// Group file entries by their YYYYMMDD_HHMMSS timestamp prefix.
+	type fileEntry struct {
+		name     string
+		suffix   string // BRP / PLD / SA2 / CSL / EVE
+		fileTime time.Time
+	}
+	groups := make(map[string][]fileEntry)
+	groupTime := make(map[string]time.Time) // prefix → parsed time
+	var order []string                      // preserve insertion order for deterministic output
 
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(strings.ToUpper(e.Name()), ".EDF") {
 			continue
 		}
-		name := strings.ToUpper(e.Name())
-		path := filepath.Join(dir, e.Name())
-
-		suffix := sessionFileSuffix(name)
-		f, err := edf.ReadFile(path, loc)
-		if err != nil {
-			return sb, fmt.Errorf("read %s: %w", e.Name(), err)
+		prefix, suffix, ok := parseEDFFilename(e.Name())
+		if !ok {
+			continue
 		}
+		ft, err := time.ParseInLocation("20060102_150405", prefix, loc)
+		if err != nil {
+			continue
+		}
+		if _, seen := groups[prefix]; !seen {
+			order = append(order, prefix)
+			groupTime[prefix] = ft
+		}
+		groups[prefix] = append(groups[prefix], fileEntry{
+			name:     e.Name(),
+			suffix:   suffix,
+			fileTime: ft,
+		})
+	}
 
-		switch suffix {
-		case "BRP":
-			sb.BRP = f
-		case "PLD":
-			sb.PLD = f
-		case "SA2":
-			sb.SA2 = f
-		case "CSL":
-			sb.CSL = f
-		case "EVE":
-			sb.EVE = f
+	// Separate prefixes into those that own data files (BRP/PLD/SA2) and those
+	// that contain only annotation files (EVE/CSL). The latter are merged into
+	// the nearest data group to compensate for the firmware timestamp offset.
+	isDataSuffix := func(s string) bool {
+		return s == "BRP" || s == "PLD" || s == "SA2"
+	}
+	hasData := func(prefix string) bool {
+		for _, fe := range groups[prefix] {
+			if isDataSuffix(fe.suffix) {
+				return true
+			}
+		}
+		return false
+	}
+
+	var annotOnlyPrefixes []string
+	var filteredOrder []string
+	for _, p := range order {
+		if hasData(p) {
+			filteredOrder = append(filteredOrder, p)
+		} else {
+			annotOnlyPrefixes = append(annotOnlyPrefixes, p)
 		}
 	}
-	return sb, nil
+
+	for _, ap := range annotOnlyPrefixes {
+		at := groupTime[ap]
+		bestPrefix := ""
+		bestDiff := time.Duration(1<<63 - 1)
+		for _, dp := range filteredOrder {
+			diff := at.Sub(groupTime[dp])
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff < bestDiff {
+				bestDiff = diff
+				bestPrefix = dp
+			}
+		}
+		if bestPrefix != "" && bestDiff <= annotationMatchWindow {
+			groups[bestPrefix] = append(groups[bestPrefix], groups[ap]...)
+		}
+		delete(groups, ap)
+	}
+	order = filteredOrder
+
+	var bundles []SessionBundle
+	for _, prefix := range order {
+		files := groups[prefix]
+		sb := SessionBundle{Date: date, FolderDir: dir}
+
+		for _, fe := range files {
+			path := filepath.Join(dir, fe.name)
+			f, err := edf.ReadFile(path, loc)
+			if err != nil {
+				continue
+			}
+			repairEDFTimestamp(f, fe.fileTime)
+
+			switch fe.suffix {
+			case "BRP":
+				sb.BRP = f
+			case "PLD":
+				sb.PLD = f
+			case "SA2":
+				sb.SA2 = f
+			case "CSL":
+				sb.CSL = f
+			case "EVE":
+				sb.EVE = f
+			}
+		}
+		bundles = append(bundles, sb)
+	}
+	return bundles, nil
 }
 
-// sessionFileSuffix extracts the 3-character type suffix from a filename like "20260612_161010_BRP.edf".
-func sessionFileSuffix(name string) string {
-	base := strings.TrimSuffix(name, ".EDF")
+// repairEDFTimestamp corrects f.Header.StartTime when it disagrees with the
+// filename-derived fileTime by more than 6 hours. This handles the ResMed
+// firmware bug where the ASCII datetime field in the EDF header is corrupted
+// while the record count and duration bytes (in different header offsets) survive
+// intact. The filename encodes the same RTC value at write time and is reliable.
+func repairEDFTimestamp(f *edf.File, fileTime time.Time) {
+	if fileTime.IsZero() {
+		return
+	}
+	diff := f.Header.StartTime.Sub(fileTime)
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > 6*time.Hour {
+		f.Header.StartTime = fileTime
+	}
+}
+
+// parseEDFFilename extracts the timestamp prefix and type suffix from a ResMed
+// EDF filename of the form "YYYYMMDD_HHMMSS_<TYPE>.edf".
+// Returns ("", "", false) for any filename that does not match this pattern.
+func parseEDFFilename(name string) (prefix, suffix string, ok bool) {
+	upper := strings.ToUpper(name)
+	base := strings.TrimSuffix(upper, ".EDF")
 	parts := strings.Split(base, "_")
 	if len(parts) < 3 {
-		return ""
+		return "", "", false
 	}
-	return parts[len(parts)-1]
+	return parts[0] + "_" + parts[1], parts[len(parts)-1], true
 }

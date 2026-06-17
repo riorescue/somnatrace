@@ -14,6 +14,10 @@ const (
 	EventTypeHypopnea         EventType = "hypopnea"          // partial reduction in flow ≥ 10 s
 	EventTypeSPO2Desat        EventType = "spo2_desaturation" // SpO₂ drop ≥ 3%
 	EventTypeLargeLeak        EventType = "large_leak"        // unintentional mask leak above threshold
+	EventTypeCSR              EventType = "csr"               // Cheyne-Stokes respiration episode
+	EventTypeRERA             EventType = "rera"              // respiratory effort-related arousal
+	EventTypeFlowLimitation   EventType = "flow_limitation"   // partial flow restriction without arousal
+	EventTypePeriodicBreathing EventType = "periodic_breathing" // cyclic crescendo/decrescendo breathing
 )
 
 // Event is one scored respiratory event parsed from an EDF+ EVE annotation file.

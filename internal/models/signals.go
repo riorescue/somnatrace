@@ -18,4 +18,6 @@ type SessionSignals struct {
 	RespRate  []SignalPoint `json:"resp_rate"` // RespRate.2s — breaths/min, 2 s intervals
 	FlowLim   []SignalPoint `json:"flow_lim"`  // FlowLim.2s — dimensionless 0–1, 2 s intervals
 	Flow      []SignalPoint `json:"flow"`      // Flow.40ms downsampled to 1 Hz — L/s
+	SpO2      []SignalPoint `json:"spo2"`      // SA2 SpO2 — % saturation, 1 Hz
+	Pulse     []SignalPoint `json:"pulse"`     // SA2 pulse rate — bpm, 1 Hz
 }

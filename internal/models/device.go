@@ -12,8 +12,10 @@ import "time"
 type DeviceFamily string
 
 const (
-	DeviceFamilyResMed  DeviceFamily = "resmed"  // ResMed AirSense / AirCurve series
-	DeviceFamilyUnknown DeviceFamily = "unknown" // unrecognised or undetected device
+	DeviceFamilyResMed       DeviceFamily = "resmed"       // ResMed AirSense / AirCurve series
+	DeviceFamilyDreamStation DeviceFamily = "dreamstation" // Philips/Respironics DreamStation 1 & 2
+	DeviceFamilySleepStyle   DeviceFamily = "sleepstyle"   // Fisher & Paykel SleepStyle
+	DeviceFamilyUnknown      DeviceFamily = "unknown"      // unrecognised or undetected device
 )
 
 // Device represents a single physical therapy device identified by serial number.

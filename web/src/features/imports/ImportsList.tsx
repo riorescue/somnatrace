@@ -13,8 +13,12 @@ import { ImportStatusBadge } from '@/components/ImportStatusBadge'
 import { SessionReviewModal } from './SessionReviewModal'
 
 function deviceFamilyLabel(family: string): string {
-  if (family === 'resmed') return 'ResMed'
-  return family
+  switch (family) {
+    case 'resmed':       return 'ResMed'
+    case 'dreamstation': return 'DreamStation'
+    case 'sleepstyle':   return 'SleepStyle'
+    default:             return family
+  }
 }
 
 export function ImportsList() {

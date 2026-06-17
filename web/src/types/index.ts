@@ -12,7 +12,7 @@ export interface Mask {
   sort_order: number
 }
 
-export type DeviceFamily = 'resmed' | 'unknown'
+export type DeviceFamily = 'resmed' | 'dreamstation' | 'sleepstyle' | 'unknown'
 
 export interface Device {
   id: string
@@ -66,8 +66,12 @@ export type EventType =
   | 'obstructive_apnea'
   | 'central_apnea'
   | 'hypopnea'
+  | 'rera'
+  | 'flow_limitation'
+  | 'periodic_breathing'
   | 'spo2_desaturation'
   | 'large_leak'
+  | 'csr'
 
 export interface Event {
   id: string

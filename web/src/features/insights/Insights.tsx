@@ -53,7 +53,7 @@ const EVENT_CFG: Record<string, { label: string; color: string }> = {
   large_leak:        { label: 'Large Leak',        color: '#f97316' },
 }
 
-const EVENT_ORDER = ['central_apnea', 'hypopnea', 'obstructive_apnea', 'spo2_desaturation', 'large_leak']
+const EVENT_ORDER = ['central_apnea', 'hypopnea', 'obstructive_apnea', 'rera', 'flow_limitation', 'periodic_breathing', 'spo2_desaturation', 'large_leak', 'csr']
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -343,7 +343,8 @@ export function Insights() {
       ? nightsWithSession.reduce((a, s) => a + s.usage_minutes, 0) / nightsWithSession.length / 60
       : 0
     const complianceRate = (compliantNights.length / effectiveDays) * 100
-    const bestNight = nightsWithSession.reduce<DailySummary | null>(
+    const nightsWithAHI = nightsWithSession.filter(s => s.ahi > 0)
+    const bestNight = nightsWithAHI.reduce<DailySummary | null>(
       (best, s) => (!best || s.ahi < best.ahi) ? s : best, null
     )
     const totalEvents = Object.values(data?.event_counts ?? {}).reduce((a, v) => a + v, 0)

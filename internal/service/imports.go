@@ -167,11 +167,15 @@ func (s *ImportService) runImport(ctx context.Context, importID, sourcePath stri
 	switch family {
 	case models.DeviceFamilyResMed:
 		imp = importer.NewResMedImporter()
+	case models.DeviceFamilyDreamStation:
+		imp = importer.NewDreamStationImporter()
+	case models.DeviceFamilySleepStyle:
+		imp = importer.NewSleepStyleImporter()
 	default:
 		return fmt.Errorf(
 			"no recognized CPAP device data found at %q — "+
-				"point to the root of the SD card (e.g. D:\\ on Windows, /Volumes/RESMED on macOS) "+
-				"and confirm it contains a DATALOG folder",
+				"point to the root of the SD card and confirm it contains a DATALOG folder "+
+				"(ResMed), a P-Series folder (DreamStation), or a FPHCARE folder (SleepStyle)",
 			sourcePath,
 		)
 	}
@@ -425,18 +429,21 @@ func (s *ImportService) storeSignals(sessionID string, signals *models.SessionSi
 		return string(b)
 	}
 	_, err := s.db.Exec(`
-		INSERT INTO session_signals (session_id, pressure, leak, resp_rate, flow_lim, flow)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO session_signals (session_id, pressure, leak, resp_rate, flow_lim, flow, spo2, pulse)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(session_id) DO UPDATE SET
 		  pressure  = excluded.pressure,
 		  leak      = excluded.leak,
 		  resp_rate = excluded.resp_rate,
 		  flow_lim  = excluded.flow_lim,
-		  flow      = excluded.flow
+		  flow      = excluded.flow,
+		  spo2      = excluded.spo2,
+		  pulse     = excluded.pulse
 	`, sessionID,
 		toJSON(signals.Pressure), toJSON(signals.Leak),
 		toJSON(signals.RespRate), toJSON(signals.FlowLim),
 		toJSON(signals.Flow),
+		toJSON(signals.SpO2), toJSON(signals.Pulse),
 	)
 	return err
 }
@@ -446,9 +453,9 @@ func (s *ImportService) upsertDevice(d importer.DeviceRecord, family models.Devi
 	now := time.Now().UTC()
 	_, err := s.db.Exec(`
 		INSERT INTO devices (id, family, manufacturer, model, serial_number, first_seen, last_seen, created_at)
-		VALUES (?, ?, 'ResMed', ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET last_seen = excluded.last_seen
-	`, d.ID, family, d.ProductName, d.SerialNumber, now, now, now)
+	`, d.ID, family, d.Manufacturer, d.ProductName, d.SerialNumber, now, now, now)
 	return err
 }
 

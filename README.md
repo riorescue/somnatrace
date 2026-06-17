@@ -14,14 +14,28 @@ SomnaTrace is an open-source alternative: insert your SD card, point the app at 
 
 ---
 
+## Supported Devices
+
+| Manufacturer | Device | Data source | Notes |
+|---|---|---|---|
+| ResMed | AirSense 10 / AirCurve 10 | EDF files (BRP, PLD, SA2, EVE, CSL) | Full signals + events |
+| ResMed | AirSense 11 | EDF files (BRP, PLD, SA2, EVE, CSL) | Full signals + events |
+| Philips Respironics | DreamStation (DS1) | Binary chunk files (.001/.002) | Summary + events; no waveform |
+| Philips Respironics | DreamStation 2 (DS2) | Encrypted binary chunks (.B01/.B02) | Summary + events; AES-256-GCM decryption built-in |
+| Fisher & Paykel | SleepStyle | SUM*.FPH + REALTIME/HRD*.EDF | Summary + flow/pressure/leak waveforms |
+
+Devices are auto-detected when their SD card is mounted.
+
+---
+
 ## What Works Today
 
 - **Real EDF parsing** — full binary header + signal + data record decoding, including EDF+D annotation tracks
-- **CPAP/BiPAP device support** — automatic SD card detection, session discovery, timezone-aware timestamp parsing (ResMed AirSense/AirCurve 10 & 11 currently supported; additional brands planned)
+- **Multi-brand device support** — automatic SD card detection for ResMed AirSense/AirCurve, Philips DreamStation 1 & 2, and Fisher & Paykel SleepStyle
 - **Signal visualization** — pressure, flow waveform, respiratory rate, and leak rate charts with timeline slider and expand mode
 - **Clinical reference lines** — per-chart upper/lower bounds reflecting accepted clinical ranges (e.g. Large Leak at 24 L/min, normal resp rate 12–20 br/min)
 - **Synchronized hover** — hovering on any chart cross-highlights the same timestamp on all others
-- **Event timeline** — scored respiratory events (obstructive/central apneas, hypopneas, large leaks, SpO₂ desaturations) parsed from EDF+ annotation files and displayed with timeline strip and event list
+- **Event timeline** — scored respiratory events (obstructive/central apneas, hypopneas, RERAs, flow limitations, periodic breathing, large leaks, SpO₂ desaturations) parsed from device files and displayed with timeline strip and event list
 - **Clinical analysis engine** — 20+ rule-based findings (pressure hunting, large leaks, respiratory rate anomalies, flow limitation burden, probable apneas/hypopneas) run automatically at import and displayed per-session with severity classification (Info/Warning/Alert/Critical)
 - **Rules configuration** — enable or disable individual analysis rules from the Rules page
 - **Multi-night insights** — AHI trend, nightly usage, pressure profile, event breakdown, night-quality calendar, therapy streaks; configurable 7-day to 1-year window
@@ -129,22 +143,16 @@ internal/
   edf/              EDF binary format reader
   importer/         Import pipeline (device-agnostic interface + per-brand implementations)
   machine/          Device detection and per-brand parsers
-    resmed/         ResMed decoder, settings, identification
+    resmed/         ResMed EDF decoder, settings, identification
+    dreamstation/   DreamStation binary chunk parser, DS2 decryption, event parser
+    sleepstyle/     SleepStyle SUM*.FPH parser, REALTIME EDF reader
   models/           Shared data models
   service/          Business logic layer
   web/              Embedded frontend assets
-migrations/         SQL migration files (010 migrations applied)
+migrations/         SQL migration files (014 migrations applied)
 web/                Vite + React + TypeScript frontend
 docs/               Architecture and developer guides
 ```
-
----
-
-## Planned
-
-- SpO₂ & pulse rate visualization (SA2 EDF files are already discovered; signal extraction not yet implemented)
-- Philips DreamStation support
-- OSCAR-compatible data import
 
 ---
 

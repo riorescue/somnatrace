@@ -1408,8 +1408,8 @@ export function SessionDetail() {
       ) : (
         <div className="card p-6 mb-4 text-center">
           <p className="text-slate-500 text-sm">
-            No EDF signal data available for this session.
-            Sessions imported from a real SD card show pressure, flow, and respiratory rate waveforms.
+            No waveform data available for this session.
+            ResMed and Fisher & Paykel SleepStyle devices record pressure, flow, and leak signals; DreamStation devices do not export waveforms.
           </p>
         </div>
       )}

@@ -18,6 +18,7 @@ import (
 type DeviceRecord struct {
 	ID           string
 	SerialNumber string
+	Manufacturer string
 	ProductName  string
 	Family       string
 }

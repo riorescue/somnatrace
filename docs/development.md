@@ -114,7 +114,7 @@ The `make build-ui` command compiles the frontend to `internal/web/dist/`. The `
 2. Write idempotent SQL (`CREATE TABLE IF NOT EXISTS`, `CREATE UNIQUE INDEX IF NOT EXISTS`).
 3. Restart the server — migrations run automatically on startup via `db.ApplyMigrations`.
 
-Current highest migration: `010_leak_settings.sql`.
+Current highest migration: `014_signals_spo2_pulse.sql`.
 
 ## Adding a New Analysis Rule
 
@@ -126,17 +126,43 @@ Current highest migration: `010_leak_settings.sql`.
 
 1. Create `internal/machine/<family>/` with device-specific parsers.
 2. Update `internal/machine/detector.go` to recognize the new family's directory signature.
-3. Register the new `DeviceFamily` constant in `internal/models/device.go`.
-4. Implement `importer.Importer` and register it in `internal/service/imports.go`'s switch statement.
+3. Add a `DeviceFamily` constant in `internal/models/device.go`.
+4. Implement `importer.Importer` in `internal/importer/<family>_importer.go` and set `Device.Manufacturer` in the returned `DeviceRecord`.
+5. Add a case for the new family in `internal/service/imports.go`'s `runImport` switch.
+
+See `machine/dreamstation/` and `machine/sleepstyle/` for worked examples.
 
 ## Working with Real SD Card Data
 
-Insert the device SD card and navigate to the **Imports** page. The page automatically scans mounted volumes for ResMed cards (`Identification.json` presence). Clicking a detected card pre-fills the import form.
+Insert the device SD card and navigate to the **Imports** page. The page automatically scans mounted volumes and pre-fills detected cards in the import form.
 
-For ResMed AirSense 11:
-- SD card root must contain `Identification.json` and `SETTINGS/CurrentSettings.json`
-- Session EDF files live under `DATALOG/YYYYMMDD/` as `.edf` bundles (BRP, PLD, SA2, CSL, EVE)
-- Timezone is read from `CurrentSettings.json` → `TimeZoneFeature.TimeZoneOffset`
+### ResMed AirSense 10 / AirCurve 10 / AirSense 11
+
+SD card root must contain `Identification.json` and `SETTINGS/CurrentSettings.json`. Session EDF files live under `DATALOG/YYYYMMDD/` as `.edf` bundles (BRP, PLD, SA2, CSL, EVE). Timezone is read from `CurrentSettings.json` → `TimeZoneFeature.TimeZoneOffset`.
+
+Detection signature: `DATALOG/` directory or `STR.edf` at SD card root.
+
+### Philips DreamStation 1 (DS1)
+
+SD card root contains a `P-Series/` directory. Inside are numbered device directories (e.g. `P-Series/1234567/`) each holding `PROP.TXT` (device properties) and one or more patient folders (`P0/`, `P1/`, …). Session data lives in the patient folders as pairs of binary files:
+- `.001` — summary chunk (session metadata, mask-on/off times, settings)
+- `.002` — events chunk (OA, CA, HY, RERA, flow limitation, periodic breathing, large leak)
+
+Detection signature: `P-Series/<dir>/PROP.TXT`.
+
+### Philips DreamStation 2 (DS2)
+
+Same layout as DS1 but session files use `.B01` / `.B02` extensions and are encrypted with AES-256-GCM. Decryption uses the published patient-access key derivation (PBKDF2-SHA256 + AES-GCM). A DS2 device directory contains `PROP.BIN` instead of `PROP.TXT`.
+
+Detection signature: `P-Series/<dir>/PROP.BIN` (no `PROP.TXT` present).
+
+### Fisher & Paykel SleepStyle
+
+SD card root contains `FPHCARE/ICON/<serial>/`. Each device directory holds:
+- `SUM*.FPH` — nightly summary files (512-byte text header + 40-byte binary records per night)
+- `REALTIME/HRD*.EDF` — waveform EDF files (flow 25 Hz, pressure 1 Hz, leak 1 Hz)
+
+Detection signature: `FPHCARE/ICON/<any_dir>/SUM*.FPH`.
 
 ## Project Conventions
 

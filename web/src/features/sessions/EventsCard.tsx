@@ -25,7 +25,7 @@ const EVENT_CONFIG: Record<EventType, EventConfig> = {
     dot: 'bg-red-500',
     text: 'text-red-700',
     border: 'border-red-200 bg-red-50',
-    description: 'Complete cessation of airflow for ≥10 seconds caused by physical collapse of the upper airway — typically behind the tongue or soft palate — while respiratory effort continues. The device detects the absence of flow despite the patient still trying to breathe.',
+    description: 'Airflow stops ≥10 s while breathing effort continues — upper airway physically blocked.',
   },
   central_apnea: {
     label: 'Central Apnea',
@@ -34,7 +34,7 @@ const EVENT_CONFIG: Record<EventType, EventConfig> = {
     dot: 'bg-purple-500',
     text: 'text-purple-700',
     border: 'border-purple-200 bg-purple-50',
-    description: 'Complete cessation of airflow for ≥10 seconds where the brain temporarily fails to send the breathing signal to the respiratory muscles. Unlike obstructive apnea, there is no airway blockage — both airflow and breathing effort stop together.',
+    description: 'Airflow and breathing effort both stop ≥10 s — the brain temporarily fails to signal the respiratory muscles.',
   },
   hypopnea: {
     label: 'Hypopnea',
@@ -43,7 +43,34 @@ const EVENT_CONFIG: Record<EventType, EventConfig> = {
     dot: 'bg-amber-400',
     text: 'text-amber-700',
     border: 'border-amber-200 bg-amber-50',
-    description: 'A partial reduction in airflow (≥30%) lasting ≥10 seconds, typically accompanied by arousal from sleep or a drop in blood oxygen. Hypopneas are less severe than full apneas but still disrupt sleep quality and count toward the AHI.',
+    description: 'Airflow reduced ≥30% for ≥10 s, typically with arousal or oxygen drop. Counts toward AHI.',
+  },
+  rera: {
+    label: 'RERA',
+    abbr: 'R',
+    color: 'bg-pink-400',
+    dot: 'bg-pink-400',
+    text: 'text-pink-700',
+    border: 'border-pink-200 bg-pink-50',
+    description: 'Flow-limited event ≥10 s that causes an arousal but doesn\'t meet apnea/hypopnea criteria.',
+  },
+  flow_limitation: {
+    label: 'Flow Limitation',
+    abbr: 'FL',
+    color: 'bg-teal-400',
+    dot: 'bg-teal-400',
+    text: 'text-teal-700',
+    border: 'border-teal-200 bg-teal-50',
+    description: 'Flattened inspiratory flow waveform indicating partial upper-airway resistance without full arousal.',
+  },
+  periodic_breathing: {
+    label: 'Periodic Breathing',
+    abbr: 'PB',
+    color: 'bg-indigo-400',
+    dot: 'bg-indigo-400',
+    text: 'text-indigo-700',
+    border: 'border-indigo-200 bg-indigo-50',
+    description: 'Cyclical crescendo-decrescendo tidal volume pattern, often linked to central apnea.',
   },
   spo2_desaturation: {
     label: 'SpO₂ Desat.',
@@ -52,7 +79,7 @@ const EVENT_CONFIG: Record<EventType, EventConfig> = {
     dot: 'bg-blue-500',
     text: 'text-blue-700',
     border: 'border-blue-200 bg-blue-50',
-    description: 'A drop in blood oxygen saturation (SpO₂) of ≥3–4% from the baseline reading, often triggered by an apnea or hypopnea. Repeated desaturations can indicate inadequate oxygenation during sleep and may be associated with cardiovascular stress.',
+    description: 'Blood oxygen drops ≥3–4% from baseline, typically triggered by an apnea or hypopnea.',
   },
   large_leak: {
     label: 'Large Leak',
@@ -61,7 +88,16 @@ const EVENT_CONFIG: Record<EventType, EventConfig> = {
     dot: 'bg-orange-400',
     text: 'text-orange-700',
     border: 'border-orange-200 bg-orange-50',
-    description: 'Unintentional mask leakage exceeding 24 L/min (ResMed threshold), distinct from the intentional vent flow (~20–30 L/min) built into PAP masks. High leak reduces therapy pressure at the airway, can cause aerophagia or noise, and may compromise treatment effectiveness.',
+    description: 'Unintentional mask leakage well above normal vent flow; reduces effective therapy pressure.',
+  },
+  csr: {
+    label: 'Cheyne-Stokes',
+    abbr: 'CS',
+    color: 'bg-violet-500',
+    dot: 'bg-violet-500',
+    text: 'text-violet-700',
+    border: 'border-violet-200 bg-violet-50',
+    description: 'Waxing-and-waning breathing pattern alternating hyperventilation with central apnea; associated with heart failure.',
   },
 }
 
@@ -95,7 +131,7 @@ function FilterBadges({ events, filter, onToggle }: FilterBadgesProps) {
     {} as Partial<Record<EventType, number>>,
   )
 
-  const types: EventType[] = ['obstructive_apnea', 'central_apnea', 'hypopnea', 'spo2_desaturation', 'large_leak']
+  const types: EventType[] = ['obstructive_apnea', 'central_apnea', 'hypopnea', 'rera', 'flow_limitation', 'periodic_breathing', 'spo2_desaturation', 'large_leak', 'csr']
   const present = types.filter(t => (counts[t] ?? 0) > 0)
   if (present.length === 0) return null
 
@@ -225,7 +261,7 @@ interface EventsCardProps {
   onEventClick?: (event: Event) => void
 }
 
-const EVENT_TYPES: EventType[] = ['obstructive_apnea', 'central_apnea', 'hypopnea', 'spo2_desaturation', 'large_leak']
+const EVENT_TYPES: EventType[] = ['obstructive_apnea', 'central_apnea', 'hypopnea', 'rera', 'flow_limitation', 'periodic_breathing', 'spo2_desaturation', 'large_leak', 'csr']
 
 export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: EventsCardProps) {
   const [filter, setFilter] = useState<Set<EventType>>(new Set())
@@ -276,7 +312,7 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
           onClick={closeInfo}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -288,7 +324,7 @@ export function EventsCard({ events, sessionStart, sessionEnd, onEventClick }: E
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
-            <div className="px-5 py-4 space-y-4">
+            <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 max-h-[60vh] overflow-y-auto">
               {EVENT_TYPES.map(t => {
                 const cfg = EVENT_CONFIG[t]
                 return (

@@ -37,7 +37,7 @@ List all known devices.
 {
   "devices": [
     {
-      "id": "dev-23254995016",
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "family": "resmed",
       "manufacturer": "ResMed",
       "model": "AirSense 11 AutoSet",
@@ -45,10 +45,22 @@ List all known devices.
       "first_seen": "2026-06-13T00:10:10Z",
       "last_seen": "2026-06-13T00:10:10Z",
       "created_at": "2026-06-13T00:10:10Z"
+    },
+    {
+      "id": "f9e8d7c6-b5a4-3210-fedc-ba9876543210",
+      "family": "dreamstation",
+      "manufacturer": "Philips Respironics",
+      "model": "DreamStation Auto CPAP",
+      "serial_number": "P18J12345678",
+      "first_seen": "2026-05-01T00:00:00Z",
+      "last_seen": "2026-06-12T00:00:00Z",
+      "created_at": "2026-05-15T10:00:00Z"
     }
   ]
 }
 ```
+
+`family` values: `resmed` | `dreamstation` | `sleepstyle` | `unknown`
 
 ---
 
@@ -202,9 +214,12 @@ Get stored EDF signal time-series for a session.
 ```
 
 - `t` — seconds from session start
-- `pressure`, `leak`, `resp_rate`, `flow_lim` — 2-second intervals (from PLD EDF)
-- `flow` — 1-second intervals (Flow.40ms at 25 Hz, downsampled ×25)
-- Units: pressure in cmH₂O, leak in L/min, resp_rate in br/min, flow in L/s
+- Units: pressure in cmH₂O, leak in L/min, resp_rate in br/min, flow in L/s (ResMed) or L/min (SleepStyle)
+
+Signal availability by device:
+- **ResMed**: all channels present; pressure/leak/resp_rate/flow_lim at 2 s intervals; flow at 1 Hz (downsampled from 25 Hz); spo2/pulse at 1 Hz.
+- **DreamStation**: no waveform signals (device does not write readable waveform files).
+- **SleepStyle**: pressure (1 Hz), leak (1 Hz), and flow (25 Hz, leak-corrected); resp_rate/flow_lim/spo2/pulse are empty.
 
 ### `GET /api/v1/sessions/{id}/settings`
 
@@ -279,7 +294,7 @@ Get the scored respiratory events for a session.
 }
 ```
 
-`type` values: `obstructive_apnea` | `central_apnea` | `hypopnea` | `spo2_desaturation` | `large_leak`
+`type` values: `obstructive_apnea` | `central_apnea` | `hypopnea` | `rera` | `flow_limitation` | `periodic_breathing` | `large_leak` | `spo2_desaturation` | `csr`
 
 Returns an empty `events` array when no events were recorded.
 
@@ -507,13 +522,14 @@ Checkpoint the WAL and run `VACUUM` to reclaim disk space.
 
 ### `GET /api/v1/detect`
 
-Scan mounted volumes for ResMed SD cards (checks for `Identification.json`).
+Scan mounted volumes for supported SD cards. Checks for known directory signatures: `DATALOG/` or `STR.edf` (ResMed), `P-Series/` with a device directory (DreamStation), and `FPHCARE/ICON/` with `SUM*.FPH` files (SleepStyle).
 
 **Response**
 ```json
 {
   "cards": [
-    { "path": "/Volumes/RESMED" }
+    { "path": "/Volumes/RESMED" },
+    { "path": "D:\\" }
   ]
 }
 ```

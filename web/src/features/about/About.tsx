@@ -86,15 +86,21 @@ export function About() {
             Supported Devices
           </h2>
           <div className="rounded-lg border border-slate-200 divide-y divide-slate-100">
-            {[
-              'ResMed AirSense 11',
-              'ResMed AirSense 10',
-              'ResMed AirCurve 11',
-              'ResMed AirCurve 10',
-            ].map((name) => (
-              <div key={name} className="flex items-center justify-between px-4 py-3">
-                <p className="text-sm text-slate-700">{name}</p>
-                <span className="ml-4 shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+            {([
+              { name: 'ResMed AirSense 11',                    detail: 'Full signals, events, settings capture' },
+              { name: 'ResMed AirSense 10',                    detail: 'Full signals, events, settings capture' },
+              { name: 'ResMed AirCurve 11',                    detail: 'Full signals, events, settings capture' },
+              { name: 'ResMed AirCurve 10',                    detail: 'Full signals, events, settings capture' },
+              { name: 'Philips DreamStation (DS1)',             detail: 'Pressure stats, OA/CA/HY/RERA/FL events' },
+              { name: 'Philips DreamStation 2 (DS2)',           detail: 'Pressure stats, OA/CA/HY/RERA/FL events — decrypted on-device' },
+              { name: 'Fisher & Paykel SleepStyle',            detail: 'Nightly summary, flow/pressure/leak waveforms' },
+            ] as const).map(({ name, detail }) => (
+              <div key={name} className="flex items-start justify-between gap-4 px-4 py-3">
+                <div>
+                  <p className="text-sm text-slate-700">{name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{detail}</p>
+                </div>
+                <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                   <CheckCircle2 className="w-3 h-3" /> Supported
                 </span>
               </div>

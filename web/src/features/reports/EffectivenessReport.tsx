@@ -29,11 +29,15 @@ const AHI_ZONES = [
 ]
 
 const EVENT_CFG: Record<string, { label: string; color: string }> = {
-  central_apnea:     { label: 'Central Apnea',    color: '#a855f7' },
-  hypopnea:          { label: 'Hypopnea',          color: '#f59e0b' },
-  obstructive_apnea: { label: 'Obstructive Apnea', color: '#ef4444' },
-  spo2_desaturation: { label: 'SpO₂ Desat.',       color: '#3b82f6' },
-  large_leak:        { label: 'Large Leak',         color: '#f97316' },
+  central_apnea:     { label: 'Central Apnea',      color: '#a855f7' },
+  hypopnea:          { label: 'Hypopnea',            color: '#f59e0b' },
+  obstructive_apnea: { label: 'Obstructive Apnea',  color: '#ef4444' },
+  rera:              { label: 'RERA',                color: '#f472b6' },
+  flow_limitation:   { label: 'Flow Limitation',     color: '#2dd4bf' },
+  periodic_breathing:{ label: 'Periodic Breathing',  color: '#818cf8' },
+  spo2_desaturation: { label: 'SpO₂ Desat.',         color: '#3b82f6' },
+  large_leak:        { label: 'Large Leak',           color: '#f97316' },
+  csr:               { label: 'Cheyne-Stokes',        color: '#7c3aed' },
 }
 
 const FEEL_CFG: Record<MorningFeel, { label: string; Icon: React.ElementType; color: string; bg: string; text: string; dot: string }> = {

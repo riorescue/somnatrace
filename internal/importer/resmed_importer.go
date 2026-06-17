@@ -115,12 +115,16 @@ func (r *ResMedImporter) Run(_ context.Context, src Source) (*Result, error) {
 			summary.ParserVersion = "0.1.0"
 		}
 
+		eveEvents := resmed.ParseEVEEvents(b.EVE, deviceID)
+		csrEvents := resmed.ParseCSLEvents(b.CSL, deviceID)
+		allEvents := append(eveEvents, csrEvents...)
+
 		sessions = append(sessions, SessionRecord{
 			DeviceID: deviceID,
 			Session:  sess,
 			Summary:  summary,
-			Signals:  extractSignals(b.PLD, b.BRP),
-			Events:   resmed.ParseEVEEvents(b.EVE, deviceID),
+			Signals:  extractSignals(b.PLD, b.BRP, b.SA2),
+			Events:   allEvents,
 		})
 	}
 
@@ -128,6 +132,7 @@ func (r *ResMedImporter) Run(_ context.Context, src Source) (*Result, error) {
 		DeviceID: deviceID,
 		Device: DeviceRecord{
 			ID:           deviceID,
+			Manufacturer: "ResMed",
 			SerialNumber: dev.SerialNumber,
 			ProductName:  dev.ProductName,
 			Family:       string(models.DeviceFamilyResMed),
@@ -156,11 +161,11 @@ func sanitizeID(s string) string {
 	return string(out)
 }
 
-// extractSignals builds a SessionSignals from the PLD (2-second derived stats)
-// and BRP (25 Hz raw waveform) EDF files. Either may be nil; the corresponding
-// signal slices will simply be empty.
-func extractSignals(pld, brp *edf.File) *models.SessionSignals {
-	if pld == nil && brp == nil {
+// extractSignals builds a SessionSignals from the PLD (2-second derived stats),
+// BRP (25 Hz raw waveform), and SA2 (SpO2/pulse oximetry) EDF files.
+// Any file may be nil; the corresponding signal slices will simply be empty.
+func extractSignals(pld, brp, sa2 *edf.File) *models.SessionSignals {
+	if pld == nil && brp == nil && sa2 == nil {
 		return nil
 	}
 	sig := &models.SessionSignals{}
@@ -190,6 +195,17 @@ func extractSignals(pld, brp *edf.File) *models.SessionSignals {
 		// Flow.40ms is sampled at 25 Hz; downsample by a factor of 25 to 1 Hz.
 		if s, ok := brp.SignalByLabel("Flow.40ms"); ok {
 			sig.Flow = downsamplePts(s.Samples, 25, 1.0)
+		}
+	}
+
+	if sa2 != nil {
+		// SA2 signals are 1 Hz; use 1-second intervals directly.
+		const step = 1.0
+		if s, ok := sa2.SignalByLabel("SpO2"); ok {
+			sig.SpO2 = makePts(s.Samples, step)
+		}
+		if s, ok := sa2.SignalByLabel("Pulse"); ok {
+			sig.Pulse = makePts(s.Samples, step)
 		}
 	}
 
