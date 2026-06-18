@@ -8,7 +8,6 @@ import {
   Upload,
   Moon,
   Settings,
-  Activity,
   Wrench,
   TrendingUp,
   Stethoscope,
@@ -42,7 +41,18 @@ export function Sidebar() {
     <aside aria-label="Application navigation" className="fixed inset-y-0 left-0 flex flex-col w-60 bg-slate-900 text-slate-100">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-slate-800">
-        <Activity className="w-5 h-5 text-brand-400" aria-hidden="true" />
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true" className="shrink-0">
+          <rect width="28" height="28" rx="7" fill="#1a3d6b" />
+          <path
+            d="M4 16 Q7 8 10 16 Q13 24 16 14 Q19 4 22 14 Q24 20 24 14"
+            stroke="#60a5fa"
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="14" cy="14" r="2.2" fill="#2dd4bf" />
+        </svg>
         <span className="font-semibold tracking-tight text-white">SomnaTrace</span>
         <span className="ml-auto text-xs text-slate-400" aria-hidden="true">{data?.version ? `v${data.version}` : ''}</span>
       </div>

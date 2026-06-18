@@ -1,9 +1,12 @@
 // Copyright (c) 2026 Josh Perkins and the SomnaTrace contributors.
 // SPDX-License-Identifier: MIT
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Upload, FolderOpen, RefreshCw, MemoryStick, ScanSearch, CheckCircle2, ClipboardList } from 'lucide-react'
+import {
+  Upload, FolderOpen, RefreshCw, MemoryStick, ScanSearch,
+  CheckCircle2, ClipboardList, HardDrive, AlertCircle,
+} from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDateTime } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
@@ -21,6 +24,101 @@ function deviceFamilyLabel(family: string): string {
   }
 }
 
+// ─── Import status dialog ─────────────────────────────────────────────────────
+
+type ImportDialogPhase = 'working' | 'success' | 'error'
+const FAKE_PROGRESS_MS = 9000
+
+function ImportStatusDialog({
+  open,
+  phase,
+  errorMessage,
+  onClose,
+}: {
+  open: boolean
+  phase: ImportDialogPhase
+  errorMessage?: string
+  onClose: () => void
+}) {
+  const [pct, setPct] = useState(0)
+
+  useEffect(() => {
+    if (!open) { setPct(0); return }
+    setPct(0)
+    const t = setTimeout(() => setPct(85), 50)
+    return () => clearTimeout(t)
+  }, [open])
+
+  useEffect(() => {
+    if (phase === 'success' || phase === 'error') setPct(100)
+  }, [phase])
+
+  if (!open) return null
+
+  const barStyle: React.CSSProperties =
+    pct === 0
+      ? { width: '0%' }
+      : { width: `${pct}%`, transition: `width ${pct === 85 ? FAKE_PROGRESS_MS : 300}ms ease-out` }
+
+  const barColor = phase === 'error' ? 'bg-red-500' : phase === 'success' ? 'bg-emerald-500' : 'bg-brand-500'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-8 py-10 text-center">
+
+        {phase === 'working' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-2 border-brand-100 border-t-brand-500 animate-spin" />
+                <HardDrive className="w-7 h-7 text-brand-400" aria-hidden="true" />
+              </div>
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Importing Device Data</h3>
+            <p className="text-sm text-slate-500 mb-7">
+              Scanning files and building your session list…
+            </p>
+          </>
+        )}
+
+        {phase === 'success' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <CheckCircle2 className="w-14 h-14 text-emerald-500" aria-hidden="true" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Import Ready</h3>
+            <p className="text-sm text-slate-500 mb-7">Opening session review…</p>
+          </>
+        )}
+
+        {phase === 'error' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <AlertCircle className="w-14 h-14 text-red-500" aria-hidden="true" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Import Failed</h3>
+            <p className="text-sm text-slate-500 mb-7">{errorMessage ?? 'An unexpected error occurred.'}</p>
+            <button
+              onClick={onClose}
+              className="px-5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium text-slate-700 transition-colors mb-7"
+            >
+              Close
+            </button>
+          </>
+        )}
+
+        <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+          <div className={`h-1 rounded-full ${barColor}`} style={barStyle} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export function ImportsList() {
   const qc = useQueryClient()
   const [sourcePath, setSourcePath] = useState('')
@@ -28,10 +126,15 @@ export function ImportsList() {
   const [formError, setFormError] = useState('')
   const [reviewImportId, setReviewImportId] = useState<string | null>(null)
 
+  const [importDialogOpen,  setImportDialogOpen]  = useState(false)
+  const [importDialogPhase, setImportDialogPhase] = useState<ImportDialogPhase>('working')
+  const [importDialogError, setImportDialogError] = useState<string>()
+  const [creatingImportId,  setCreatingImportId]  = useState<string | null>(null)
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['imports'],
     queryFn: api.imports.list,
-    refetchInterval: 5000,
+    refetchInterval: creatingImportId ? 1500 : 5000,
   })
 
   const { data: detected, refetch: refetchDetect, isFetching: detecting } = useQuery({
@@ -41,25 +144,54 @@ export function ImportsList() {
     staleTime: 10_000,
   })
 
+  // Watch for the in-progress import to reach pending_review or fail.
+  useEffect(() => {
+    if (!creatingImportId || !importDialogOpen) return
+    const allImports = data?.imports ?? []
+    const imp = allImports.find(i => i.id === creatingImportId)
+    if (!imp) return
+
+    if (imp.status === 'pending_review') {
+      setImportDialogPhase('success')
+      setTimeout(() => {
+        setImportDialogOpen(false)
+        setCreatingImportId(null)
+        setReviewImportId(imp.id)
+      }, 1200)
+    } else if (imp.status === 'failed' || imp.status === 'cancelled') {
+      setImportDialogPhase('error')
+      setImportDialogError(imp.error_message || 'Import failed. Check the source path and try again.')
+      setCreatingImportId(null)
+    }
+  }, [data, creatingImportId, importDialogOpen])
+
   const createMut = useMutation({
     mutationFn: api.imports.create,
-    onSuccess: () => {
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['imports'] })
       setSourcePath('')
       setSourceName('')
       setFormError('')
+      setCreatingImportId(created.id)
     },
-    onError: (err: Error) => setFormError(err.message),
+    onError: (err: Error) => {
+      setImportDialogPhase('error')
+      setImportDialogError(err.message)
+    },
   })
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!sourcePath.trim()) { setFormError('Source path is required.'); return }
+    setImportDialogPhase('working')
+    setImportDialogError(undefined)
+    setCreatingImportId(null)
+    setImportDialogOpen(true)
+    setFormError('')
     createMut.mutate({ source_path: sourcePath.trim(), source_name: sourceName.trim() || undefined })
   }
 
   function pathLabel(path: string): string {
-    // Handle both Unix '/' and Windows '\' separators.
     const parts = path.replace(/\\/g, '/').split('/').filter(Boolean)
     return parts[parts.length - 1] ?? path
   }
@@ -83,6 +215,16 @@ export function ImportsList() {
       <PageHeader
         title="Imports"
         description="Manage your device data imports"
+      />
+
+      <ImportStatusDialog
+        open={importDialogOpen}
+        phase={importDialogPhase}
+        errorMessage={importDialogError}
+        onClose={() => {
+          setImportDialogOpen(false)
+          setCreatingImportId(null)
+        }}
       />
 
       {/* Detected storage media */}
@@ -182,11 +324,10 @@ export function ImportsList() {
             <button
               type="submit"
               className="btn-primary"
-              disabled={createMut.isPending || hasPendingReview}
+              disabled={createMut.isPending || hasPendingReview || importDialogOpen}
             >
-              {createMut.isPending
-                ? <><RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" /> Starting…</>
-                : <><Upload className="w-4 h-4" aria-hidden="true" /> Start Import</>}
+              <Upload className="w-4 h-4" aria-hidden="true" />
+              Start Import
             </button>
           </div>
         </form>

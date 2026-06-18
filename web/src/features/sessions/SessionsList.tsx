@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Moon, ArrowRight, X, Zap } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Moon, X, Zap } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, formatTime, formatDuration, formatAHI, ahiLabel } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
@@ -103,14 +103,17 @@ export function SessionsList() {
                 <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Events/hr</th>
                 <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pressure P95</th>
                 <th scope="col" className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Leak</th>
-                <th scope="col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sessions.map(sess => {
                 const { label, color } = ahiLabel(sess.ahi)
                 return (
-                  <tr key={sess.id} className="hover:bg-slate-50 transition-colors group">
+                  <tr
+                    key={sess.id}
+                    className="hover:bg-slate-50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/sessions/${sess.id}`)}
+                  >
                     <td className="px-5 py-3 font-medium text-slate-800">{formatDate(sess.start_time)}</td>
                     <td className="px-5 py-3 text-slate-500 tabular-nums">{formatTime(sess.start_time)}</td>
                     <td className="px-5 py-3 text-slate-700 tabular-nums">{formatDuration(sess.duration_minutes)}</td>
@@ -125,14 +128,6 @@ export function SessionsList() {
                     </td>
                     <td className="px-5 py-3 text-slate-700 tabular-nums">{sess.pressure_p95.toFixed(1)} cmH₂O</td>
                     <td className="px-5 py-3 text-slate-700 tabular-nums">{sess.leak_rate_median.toFixed(1)} L/min</td>
-                    <td className="px-5 py-3 text-right">
-                      <Link
-                        to={`/sessions/${sess.id}`}
-                        className="inline-flex items-center gap-1 text-xs text-brand-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                      >
-                        Detail <ArrowRight className="w-3 h-3" aria-hidden="true" />
-                      </Link>
-                    </td>
                   </tr>
                 )
               })}

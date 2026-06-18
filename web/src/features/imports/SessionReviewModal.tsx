@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, CheckSquare, Square, AlertCircle, Loader2, DatabaseZap, Smile, Meh, Frown, Trash2 } from 'lucide-react'
+import { X, CheckSquare, Square, AlertCircle, CheckCircle2, Loader2, DatabaseZap, Smile, Meh, Frown, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, formatTime, formatDuration, formatAHI, ahiLabel } from '@/lib/format'
 import type { Mask, MorningFeel, SessionCandidate } from '@/types'
@@ -88,6 +88,99 @@ function MorningFeelPicker({
   )
 }
 
+// ─── Confirm status dialog ────────────────────────────────────────────────────
+
+type ConfirmPhase = 'working' | 'success' | 'error'
+const CONFIRM_PROGRESS_MS = 4000
+
+function ConfirmStatusDialog({
+  open,
+  phase,
+  errorMessage,
+  onClose,
+}: {
+  open: boolean
+  phase: ConfirmPhase
+  errorMessage?: string
+  onClose: () => void
+}) {
+  const [pct, setPct] = useState(0)
+
+  useEffect(() => {
+    if (!open) { setPct(0); return }
+    setPct(0)
+    const t = setTimeout(() => setPct(85), 50)
+    return () => clearTimeout(t)
+  }, [open])
+
+  useEffect(() => {
+    if (phase === 'success' || phase === 'error') setPct(100)
+  }, [phase])
+
+  if (!open) return null
+
+  const barStyle: React.CSSProperties =
+    pct === 0
+      ? { width: '0%' }
+      : { width: `${pct}%`, transition: `width ${pct === 85 ? CONFIRM_PROGRESS_MS : 300}ms ease-out` }
+
+  const barColor = phase === 'error' ? 'bg-red-500' : phase === 'success' ? 'bg-emerald-500' : 'bg-brand-500'
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-8 py-10 text-center">
+
+        {phase === 'working' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-2 border-brand-100 border-t-brand-500 animate-spin" />
+                <DatabaseZap className="w-7 h-7 text-brand-400" aria-hidden="true" />
+              </div>
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Saving Sessions</h3>
+            <p className="text-sm text-slate-500 mb-7">
+              Writing selected sessions to your local database…
+            </p>
+          </>
+        )}
+
+        {phase === 'success' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <CheckCircle2 className="w-14 h-14 text-emerald-500" aria-hidden="true" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Import Complete</h3>
+            <p className="text-sm text-slate-500 mb-7">Your sessions have been saved.</p>
+          </>
+        )}
+
+        {phase === 'error' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <AlertCircle className="w-14 h-14 text-red-500" aria-hidden="true" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 mb-1.5">Save Failed</h3>
+            <p className="text-sm text-slate-500 mb-7">{errorMessage ?? 'An unexpected error occurred.'}</p>
+            <button
+              onClick={onClose}
+              className="px-5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium text-slate-700 transition-colors mb-7"
+            >
+              Close
+            </button>
+          </>
+        )}
+
+        <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+          <div className={`h-1 rounded-full ${barColor}`} style={barStyle} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -136,8 +229,33 @@ export function SessionReviewModal({ importId, onClose }: Props) {
   const [sessionNotes, setSessionNotes] = useState<Record<string, string>>({})
   const [initialised,  setInitialised]  = useState(false)
 
+  const [confirmOpen,  setConfirmOpen]  = useState(false)
+  const [confirmPhase, setConfirmPhase] = useState<ConfirmPhase>('working')
+  const [confirmError, setConfirmError] = useState<string>()
+
+  const { data: importsData } = useQuery({
+    queryKey: ['imports'],
+    queryFn: api.imports.list,
+    refetchInterval: confirmOpen && confirmPhase === 'working' ? 1500 : false,
+    enabled: confirmOpen,
+  })
+
   useEffect(() => {
-    if (sessions.length > 0 && !initialised) {
+    if (!confirmOpen || confirmPhase !== 'working') return
+    const imp = importsData?.imports?.find(i => i.id === importId)
+    if (!imp) return
+    if (imp.status === 'complete') {
+      setConfirmPhase('success')
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      setTimeout(() => { setConfirmOpen(false); onClose() }, 1500)
+    } else if (imp.status === 'failed') {
+      setConfirmPhase('error')
+      setConfirmError(imp.error_message || 'Sessions could not be saved.')
+    }
+  }, [importsData, confirmOpen, confirmPhase, importId, qc, onClose])
+
+  useEffect(() => {
+    if (sessions.length > 0 && appSettings !== undefined && !initialised) {
       const newSessions = sessions.filter(s => !s.already_imported)
       setSelected(new Set(newSessions.map(s => s.id)))
       if (appSettings?.default_mask_id) {
@@ -159,7 +277,17 @@ export function SessionReviewModal({ importId, onClose }: Props) {
       }
       return api.imports.confirm(importId, sessionIds, metadata)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['imports'] }); onClose() },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['imports'] })
+      setConfirmPhase('working')
+      setConfirmError(undefined)
+      setConfirmOpen(true)
+    },
+    onError: (err: Error) => {
+      setConfirmPhase('error')
+      setConfirmError(err.message)
+      setConfirmOpen(true)
+    },
   })
 
   const discardMut = useMutation({
@@ -186,6 +314,7 @@ export function SessionReviewModal({ importId, onClose }: Props) {
   const isBusy = confirmMut.isPending || discardMut.isPending
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
 
@@ -328,6 +457,14 @@ export function SessionReviewModal({ importId, onClose }: Props) {
         </div>
       </div>
     </div>
+
+    <ConfirmStatusDialog
+      open={confirmOpen}
+      phase={confirmPhase}
+      errorMessage={confirmError}
+      onClose={() => { setConfirmOpen(false); onClose() }}
+    />
+    </>
   )
 }
 
