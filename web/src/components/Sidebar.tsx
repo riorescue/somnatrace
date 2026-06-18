@@ -27,7 +27,10 @@ const nav = [
   { to: '/imports',   label: 'Imports',   icon: Upload },
   { to: '/utilities', label: 'Utilities', icon: Wrench },
   { to: '/settings',  label: 'Settings',  icon: Settings },
-  { to: '/about',     label: 'About',     icon: Info },
+]
+
+const navBottom = [
+  { to: '/about', label: 'About', icon: Info },
 ]
 
 export function Sidebar() {
@@ -64,6 +67,26 @@ export function Sidebar() {
             key={to}
             to={to}
             end={end}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                isActive
+                  ? 'bg-brand-700 text-white'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+              }`
+            }
+          >
+            <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Bottom nav */}
+      <nav aria-label="Secondary" className="px-3 pb-2 space-y-0.5">
+        {navBottom.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
