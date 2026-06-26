@@ -84,6 +84,14 @@ func DiscoverSessions(root string, loc *time.Location) ([]SessionBundle, error) 
 // before the waveform files in the same session, so a short window is enough.
 const annotationMatchWindow = 5 * time.Minute
 
+// brpMatchWindow is how far apart a BRP-only group's filename timestamp may be
+// from a PLD-bearing group and still be merged into it. ResMed firmware
+// sometimes writes the 25 Hz BRP waveform file 1-2 seconds after the PLD/SA2
+// files for the same session, producing two filename prefixes that the initial
+// grouping splits into separate bundles. This window keeps the merge narrow so
+// genuinely distinct mask-off/mask-on segments are not accidentally combined.
+const brpMatchWindow = 2 * time.Minute
+
 // discoverBundlesInDir scans a single DATALOG/YYYYMMDD directory and returns
 // one SessionBundle per distinct therapy segment. Each EDF file's header start
 // time is validated against the filename-encoded time and repaired when the two
@@ -178,6 +186,66 @@ func discoverBundlesInDir(dir string, date time.Time, loc *time.Location) ([]Ses
 		}
 		delete(groups, ap)
 	}
+
+	// Second pass: merge BRP-only data groups into the nearest PLD-bearing group.
+	// ResMed firmware sometimes writes BRP 1-2 seconds after PLD/SA2, creating a
+	// separate filename prefix that the initial grouping treats as a distinct session.
+	hasPLD := func(prefix string) bool {
+		for _, fe := range groups[prefix] {
+			if fe.suffix == "PLD" || fe.suffix == "SA2" {
+				return true
+			}
+		}
+		return false
+	}
+	isBRPOnly := func(prefix string) bool {
+		hasBRP := false
+		for _, fe := range groups[prefix] {
+			switch fe.suffix {
+			case "BRP":
+				hasBRP = true
+			case "PLD", "SA2":
+				return false
+			}
+		}
+		return hasBRP
+	}
+
+	var brpOnlyPrefixes []string
+	var mergedOrder []string
+	for _, p := range filteredOrder {
+		if isBRPOnly(p) {
+			brpOnlyPrefixes = append(brpOnlyPrefixes, p)
+		} else {
+			mergedOrder = append(mergedOrder, p)
+		}
+	}
+	for _, bp := range brpOnlyPrefixes {
+		bt := groupTime[bp]
+		bestPrefix := ""
+		bestDiff := time.Duration(1<<63 - 1)
+		for _, dp := range mergedOrder {
+			if !hasPLD(dp) {
+				continue
+			}
+			diff := bt.Sub(groupTime[dp])
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff < bestDiff {
+				bestDiff = diff
+				bestPrefix = dp
+			}
+		}
+		if bestPrefix != "" && bestDiff <= brpMatchWindow {
+			groups[bestPrefix] = append(groups[bestPrefix], groups[bp]...)
+		} else {
+			mergedOrder = append(mergedOrder, bp)
+		}
+		delete(groups, bp)
+	}
+	filteredOrder = mergedOrder
+
 	order = filteredOrder
 
 	var bundles []SessionBundle
