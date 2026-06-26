@@ -27,7 +27,7 @@ func (s *SummaryService) GetInsights(days int) (*InsightsResult, error) {
 		days = 30
 	}
 
-	since := time.Now().UTC().AddDate(0, 0, -days).Format("2006-01-02")
+	since := time.Now().UTC().AddDate(0, 0, -(days-1)).Format("2006-01-02")
 
 	// ── Summaries (ASC for chronological charting) ────────────────────────────
 	rows, err := s.db.Query(`

@@ -92,7 +92,7 @@ function ahiColor(ahi: number): string {
 function fillDateRange(summaries: DailySummary[], days: number): DailySummary[] {
   const byDate = new Map(summaries.map(s => [s.date, s]))
   const result: DailySummary[] = []
-  for (let i = days; i >= 1; i--) {
+  for (let i = days - 1; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
     const key = localDateStr(d)
@@ -133,7 +133,7 @@ function NightCalendar({ summaries, days, firstSessionDate }: CalendarProps) {
   const cur = new Date(startDate)
   while (cur <= today) {
     const key = cur.toISOString().slice(0, 10)
-    const inRange = cur >= new Date(today.getTime() - days * 86400_000 + 1)
+    const inRange = cur >= new Date(today.getTime() - (days - 1) * 86400_000)
     cells.push({ date: key, inRange })
     cur.setDate(cur.getDate() + 1)
   }
@@ -316,15 +316,13 @@ export function Insights() {
   const { isNewUser, effectiveDays } = useMemo(() => {
     const today = new Date()
     const windowStart = new Date(today)
-    windowStart.setDate(windowStart.getDate() - days)
+    windowStart.setDate(windowStart.getDate() - (days - 1))
     const windowStartDate = localDateStr(windowStart)
     const isNewUser = firstSessionDate !== null && firstSessionDate > windowStartDate
     let effectiveDays = days
     if (isNewUser && firstSessionDate) {
       const first = new Date(firstSessionDate + 'T12:00:00')
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-      effectiveDays = Math.max(1, Math.round((yesterday.getTime() - first.getTime()) / 86400_000) + 1)
+      effectiveDays = Math.max(1, Math.round((today.getTime() - first.getTime()) / 86400_000) + 1)
     }
     return { isNewUser, effectiveDays }
   }, [firstSessionDate, days])
@@ -385,7 +383,7 @@ export function Insights() {
 
   const sinceDate = useMemo(() => {
     const d = new Date()
-    d.setDate(d.getDate() - days)
+    d.setDate(d.getDate() - (days - 1))
     return localDateStr(d)
   }, [days])
 
